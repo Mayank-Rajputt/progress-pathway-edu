@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +16,13 @@ import TeacherDashboard from "./pages/dashboards/TeacherDashboard";
 import StudentDashboard from "./pages/dashboards/StudentDashboard";
 import ParentDashboard from "./pages/dashboards/ParentDashboard";
 import Attendance from "./pages/Attendance";
+import Marks from "./pages/Marks";
+import ReportCards from "./pages/ReportCards";
+import Announcements from "./pages/Announcements";
+import Timetable from "./pages/Timetable";
+import Profile from "./pages/Profile";
+import Users from "./pages/Users";
+import Students from "./pages/Students";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +80,62 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <Attendance />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/marks" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Marks />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/report-cards" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <ReportCards />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/announcements" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Announcements />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/timetable" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Timetable />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Profile />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AppLayout>
+                  <Users />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/students" element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <AppLayout>
+                  <Students />
                 </AppLayout>
               </ProtectedRoute>
             } />
