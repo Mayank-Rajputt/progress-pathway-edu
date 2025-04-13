@@ -1,14 +1,27 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import LoadingScreen from '@/components/LoadingScreen';
 
 const Index = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
-    </div>
-  );
+  const { isAuthenticated, user, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (isAuthenticated && user) {
+      // If user is authenticated, redirect to their role-specific dashboard
+      navigate(`/dashboard/${user.role}`);
+    } else {
+      // If not authenticated, redirect to welcome page
+      navigate('/');
+    }
+  }, [isAuthenticated, user, isLoading, navigate]);
+
+  // Show loading screen while checking authentication or redirecting
+  return <LoadingScreen />;
 };
 
 export default Index;
