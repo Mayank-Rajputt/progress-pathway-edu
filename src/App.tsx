@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +14,7 @@ import AdminDashboard from "./pages/dashboards/AdminDashboard";
 import TeacherDashboard from "./pages/dashboards/TeacherDashboard";
 import StudentDashboard from "./pages/dashboards/StudentDashboard";
 import ParentDashboard from "./pages/dashboards/ParentDashboard";
+import Attendance from "./pages/Attendance";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +63,15 @@ const App = () => (
               <ProtectedRoute allowedRoles={['parent']}>
                 <AppLayout>
                   <ParentDashboard />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+
+            {/* Other Protected Routes */}
+            <Route path="/attendance" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Attendance />
                 </AppLayout>
               </ProtectedRoute>
             } />
