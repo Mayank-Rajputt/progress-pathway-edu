@@ -7,7 +7,8 @@ import {
   GraduationCap,
   Clock,
   Bell,
-  BookOpen as Report
+  BookOpen as Report,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ const StudentDashboard: React.FC = () => {
     { title: 'View Grades', icon: <GraduationCap size={18} />, path: '/marks' },
     { title: 'View Attendance', icon: <CalendarDays size={18} />, path: '/attendance' },
     { title: 'Report Card', icon: <Report size={18} />, path: '/report-cards' },
+    { title: 'Submit Issue', icon: <MessageSquare size={18} />, path: '/submit-issue' },
     { title: 'Announcements', icon: <Bell size={18} />, path: '/announcements' },
   ];
 

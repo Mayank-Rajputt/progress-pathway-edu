@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -7,7 +6,8 @@ import {
   BookOpen,
   Clock,
   AlertCircle,
-  Edit
+  Edit,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ const TeacherDashboard: React.FC = () => {
     { title: 'Enter Marks', icon: <Edit size={18} />, path: '/marks' },
     { title: 'View Timetable', icon: <Clock size={18} />, path: '/timetable' },
     { title: 'Generate Report', icon: <BookOpen size={18} />, path: '/report-cards' },
+    { title: 'Student Issues', icon: <MessageSquare size={18} />, path: '/student-issues' },
   ];
 
   return (

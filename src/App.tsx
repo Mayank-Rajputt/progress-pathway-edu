@@ -23,6 +23,8 @@ import Timetable from "./pages/Timetable";
 import Profile from "./pages/Profile";
 import Users from "./pages/Users";
 import Students from "./pages/Students";
+import StudentIssues from "./pages/StudentIssues";
+import SubmitIssue from "./pages/SubmitIssue";
 
 const queryClient = new QueryClient();
 
@@ -136,6 +138,22 @@ const App = () => (
               <ProtectedRoute allowedRoles={['teacher']}>
                 <AppLayout>
                   <Students />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/student-issues" element={
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+                <AppLayout>
+                  <StudentIssues />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/submit-issue" element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <AppLayout>
+                  <SubmitIssue />
                 </AppLayout>
               </ProtectedRoute>
             } />
