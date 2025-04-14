@@ -1,10 +1,12 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { School, Users, GraduationCap, UserCog, BookOpen } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Welcome: React.FC = () => {
+  const isMobile = useIsMobile();
+  
   const features = [
     {
       icon: <Users className="h-8 w-8 text-admin" />,
@@ -31,27 +33,27 @@ const Welcome: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-primary/90 to-primary text-white py-24">
+      <section className="relative bg-gradient-to-b from-primary/90 to-primary text-white py-16 md:py-24">
         <div className="container mx-auto px-4 text-center">
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-6 md:mb-8">
             <img 
-              src="/lovable-uploads/28048bd3-4188-4677-a707-e77bcf3a1aa5.png" 
+              src="/lovable-uploads/098aba0b-f4d7-4326-ac4f-d97268594b9e.png" 
               alt="Trakdemy Logo" 
-              className="h-32"
+              className="h-24 md:h-32"
             />
           </div>
-          <h1 className="text-5xl font-bold mb-6">Trakdemy</h1>
-          <p className="text-xl max-w-3xl mx-auto mb-10">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 md:mb-6">Trakdemy</h1>
+          <p className="text-lg md:text-xl max-w-3xl mx-auto mb-8 md:mb-10">
             A comprehensive student information management system for educational institutions
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/login">
-              <Button size="lg" variant="secondary" className="min-w-32">
+              <Button size={isMobile ? "default" : "lg"} variant="secondary" className="min-w-28 md:min-w-32">
                 Log In
               </Button>
             </Link>
             <Link to="/signup">
-              <Button size="lg" className="bg-white text-primary hover:bg-gray-100 min-w-32">
+              <Button size={isMobile ? "default" : "lg"} className="bg-white text-primary hover:bg-gray-100 min-w-28 md:min-w-32">
                 Sign Up
               </Button>
             </Link>
@@ -61,12 +63,12 @@ const Welcome: React.FC = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-background">
+      <section className="py-16 md:py-20 bg-background">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Key Features</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12">Key Features</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
             {features.map((feature, index) => (
-              <div key={index} className="p-6 border rounded-xl bg-card hover:shadow-md transition-shadow">
+              <div key={index} className="p-4 md:p-6 border rounded-xl bg-card hover:shadow-md transition-shadow">
                 <div className="mb-4">{feature.icon}</div>
                 <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                 <p className="text-muted-foreground">{feature.description}</p>
@@ -77,10 +79,10 @@ const Welcome: React.FC = () => {
       </section>
 
       {/* User Types Section */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-16 md:py-20 bg-muted/30">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">For Every Educational Stakeholder</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12">For Every Educational Stakeholder</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
             <div className="p-6 border border-admin rounded-xl bg-card hover:shadow-md transition-shadow">
               <div className="h-12 w-12 flex items-center justify-center bg-admin text-white rounded-lg mb-4">
                 <UserCog size={24} />
@@ -189,16 +191,16 @@ const Welcome: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-muted py-10 mt-auto">
+      <footer className="bg-muted py-8 md:py-10 mt-auto">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
               <img 
-                src="/lovable-uploads/28048bd3-4188-4677-a707-e77bcf3a1aa5.png" 
+                src="/lovable-uploads/098aba0b-f4d7-4326-ac4f-d97268594b9e.png" 
                 alt="Trakdemy Logo" 
-                className="h-8"
+                className="h-6 md:h-8"
               />
-              <span className="text-xl font-bold">Trakdemy</span>
+              <span className="text-lg md:text-xl font-bold">Trakdemy</span>
             </div>
             <div className="text-sm text-muted-foreground">
               &copy; {new Date().getFullYear()} Trakdemy. All rights reserved.
