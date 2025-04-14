@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -76,13 +75,13 @@ const ReportCards = () => {
   // Calculate totals and percentages for student view
   const totalMarks = studentGrades.reduce((sum, subject) => sum + subject.marks, 0);
   const maxPossibleMarks = studentGrades.length * 100;
-  const percentage = ((totalMarks / maxPossibleMarks) * 100).toFixed(2);
+  const percentageNumeric = Number(((totalMarks / maxPossibleMarks) * 100).toFixed(2));
   const overallGrade = 
-    percentage >= 90 ? 'A+' :
-    percentage >= 80 ? 'A' :
-    percentage >= 70 ? 'B+' :
-    percentage >= 60 ? 'B' :
-    percentage >= 50 ? 'C' : 'F';
+    percentageNumeric >= 90 ? 'A+' :
+    percentageNumeric >= 80 ? 'A' :
+    percentageNumeric >= 70 ? 'B+' :
+    percentageNumeric >= 60 ? 'B' :
+    percentageNumeric >= 50 ? 'C' : 'F';
 
   return (
     <div className="space-y-6">
@@ -244,7 +243,7 @@ const ReportCards = () => {
                     <TableCell className="font-bold">Total</TableCell>
                     <TableCell className="text-right font-bold">{totalMarks} / {maxPossibleMarks}</TableCell>
                     <TableCell className="text-right font-bold">{overallGrade}</TableCell>
-                    <TableCell>{percentage}%</TableCell>
+                    <TableCell>{percentageNumeric}%</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -252,13 +251,6 @@ const ReportCards = () => {
             
             <div className="mt-6 border rounded-md p-4">
               <h3 className="font-semibold mb-2">Teacher's Remarks</h3>
-              <p>A dedicated student who has shown consistent improvement throughout the term. 
-                 Excellent performance in Science and Computer Science. 
-                 More practice recommended in History to improve overall grade.</p>
-            </div>
-            
-            <div className="mt-6 border rounded-md p-4">
-              <h3 className="font-semibold mb-2">Attendance</h3>
               <div className="flex gap-6">
                 <div>
                   <p className="text-muted-foreground text-sm">Total Classes</p>
@@ -270,7 +262,7 @@ const ReportCards = () => {
                 </div>
                 <div>
                   <p className="text-muted-foreground text-sm">Attendance Percentage</p>
-                  <p className="text-2xl font-semibold">96.7%</p>
+                  <p className="text-2xl font-semibold">{percentageNumeric}%</p>
                 </div>
               </div>
             </div>
