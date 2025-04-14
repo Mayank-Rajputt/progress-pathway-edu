@@ -14,7 +14,8 @@ import {
   UserCog,
   LogOut,
   Menu,
-  X
+  X,
+  Bell  // Added Bell icon import
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
