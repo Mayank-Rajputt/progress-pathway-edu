@@ -7,11 +7,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { School } from 'lucide-react';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -28,13 +38,21 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleForgotPassword = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    // Simulate sending email with password reset options
+    toast.success(`Password reset options sent to ${forgotPasswordEmail}`);
+    setIsForgotPasswordOpen(false);
+    setForgotPasswordEmail('');
+  };
+
   const loginAsDemoUser = async (type: 'admin' | 'teacher' | 'student' | 'parent') => {
     setIsSubmitting(true);
     const demoCredentials = {
-      admin: { email: 'admin@edutrack.com', password: 'admin123' },
-      teacher: { email: 'teacher@edutrack.com', password: 'teacher123' },
-      student: { email: 'student@edutrack.com', password: 'student123' },
-      parent: { email: 'parent@edutrack.com', password: 'parent123' },
+      admin: { email: 'admin@trakdemy.com', password: 'admin123' },
+      teacher: { email: 'teacher@trakdemy.com', password: 'teacher123' },
+      student: { email: 'student@trakdemy.com', password: 'student123' },
+      parent: { email: 'parent@trakdemy.com', password: 'parent123' },
     };
     
     try {
@@ -50,7 +68,7 @@ const Login: React.FC = () => {
       <div className="hidden lg:flex lg:w-1/2 bg-primary justify-center items-center p-12">
         <div className="max-w-lg text-white">
           <School size={80} className="mb-8" />
-          <h1 className="text-4xl font-bold mb-4">EduTrack</h1>
+          <h1 className="text-4xl font-bold mb-4">Trakdemy</h1>
           <p className="text-xl mb-8">
             Streamline your educational institution with our comprehensive student information management system.
           </p>
@@ -77,7 +95,7 @@ const Login: React.FC = () => {
             </div>
             <h2 className="text-3xl font-bold tracking-tight">Welcome back</h2>
             <p className="text-muted-foreground mt-2">
-              Sign in to your EduTrack account
+              Sign in to your Trakdemy account
             </p>
           </div>
 
@@ -98,9 +116,13 @@ const Login: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                  <button 
+                    type="button"
+                    onClick={() => setIsForgotPasswordOpen(true)} 
+                    className="text-sm text-primary hover:underline"
+                  >
                     Forgot password?
-                  </Link>
+                  </button>
                 </div>
                 <Input
                   id="password"
@@ -176,6 +198,45 @@ const Login: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={isForgotPasswordOpen} onOpenChange={setIsForgotPasswordOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Forgot Password</DialogTitle>
+            <DialogDescription>
+              Enter your email to receive password reset options.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleForgotPassword}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email">Email</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  placeholder="email@example.com"
+                  required
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                />
+              </div>
+              <DialogFooter className="sm:justify-end">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsForgotPasswordOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  Send Options
+                </Button>
+              </DialogFooter>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

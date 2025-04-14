@@ -21,6 +21,7 @@ interface AuthContextType {
   logout: () => void;
   signup: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
   getToken: () => string | null;
+  updateProfileImage: (imageUrl: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,28 +31,28 @@ const MOCK_USERS: User[] = [
   {
     id: '1',
     name: 'Admin User',
-    email: 'admin@edutrack.com',
+    email: 'admin@trakdemy.com',
     role: 'admin',
     profileImage: 'https://ui-avatars.com/api/?background=1A73E8&color=fff&name=Admin+User'
   },
   {
     id: '2',
     name: 'Teacher Smith',
-    email: 'teacher@edutrack.com',
+    email: 'teacher@trakdemy.com',
     role: 'teacher',
     profileImage: 'https://ui-avatars.com/api/?background=8B5CF6&color=fff&name=Teacher+Smith'
   },
   {
     id: '3',
     name: 'Student Johnson',
-    email: 'student@edutrack.com',
+    email: 'student@trakdemy.com',
     role: 'student',
     profileImage: 'https://ui-avatars.com/api/?background=10B981&color=fff&name=Student+Johnson'
   },
   {
     id: '4',
     name: 'Parent Davis',
-    email: 'parent@edutrack.com',
+    email: 'parent@trakdemy.com',
     role: 'parent',
     profileImage: 'https://ui-avatars.com/api/?background=F59E0B&color=fff&name=Parent+Davis'
   }
@@ -59,10 +60,10 @@ const MOCK_USERS: User[] = [
 
 // Mock passwords (in a real app, these would be hashed in the database)
 const MOCK_PASSWORDS: Record<string, string> = {
-  'admin@edutrack.com': 'admin123',
-  'teacher@edutrack.com': 'teacher123',
-  'student@edutrack.com': 'student123',
-  'parent@edutrack.com': 'parent123'
+  'admin@trakdemy.com': 'admin123',
+  'teacher@trakdemy.com': 'teacher123',
+  'student@trakdemy.com': 'student123',
+  'parent@trakdemy.com': 'parent123'
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -72,8 +73,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Check for saved auth on load
-    const savedUser = localStorage.getItem('edutrack_user');
-    const savedToken = localStorage.getItem('edutrack_token');
+    const savedUser = localStorage.getItem('trakdemy_user');
+    const savedToken = localStorage.getItem('trakdemy_token');
 
     if (savedUser && savedToken) {
       setUser(JSON.parse(savedUser));
@@ -81,6 +82,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setIsLoading(false);
   }, []);
+
+  const updateProfileImage = (imageUrl: string | null) => {
+    if (user) {
+      const updatedUser = { ...user, profileImage: imageUrl };
+      setUser(updatedUser);
+      localStorage.setItem('trakdemy_user', JSON.stringify(updatedUser));
+    }
+  };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -100,8 +109,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = `mock-jwt-token-${foundUser.id}-${Date.now()}`;
       
       // Save to localStorage
-      localStorage.setItem('edutrack_token', token);
-      localStorage.setItem('edutrack_user', JSON.stringify(foundUser));
+      localStorage.setItem('trakdemy_token', token);
+      localStorage.setItem('trakdemy_user', JSON.stringify(foundUser));
       
       setUser(foundUser);
       
@@ -144,8 +153,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = `mock-jwt-token-${newUser.id}-${Date.now()}`;
       
       // Save to localStorage
-      localStorage.setItem('edutrack_token', token);
-      localStorage.setItem('edutrack_user', JSON.stringify(newUser));
+      localStorage.setItem('trakdemy_token', token);
+      localStorage.setItem('trakdemy_user', JSON.stringify(newUser));
       
       // Update mock users array for this session
       MOCK_USERS.push(newUser);
@@ -164,14 +173,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('edutrack_token');
-    localStorage.removeItem('edutrack_user');
+    localStorage.removeItem('trakdemy_token');
+    localStorage.removeItem('trakdemy_user');
     setUser(null);
     navigate('/login');
     toast.success('Logged out successfully');
   };
 
-  const getToken = () => localStorage.getItem('edutrack_token');
+  const getToken = () => localStorage.getItem('trakdemy_token');
 
   const value = {
     user,
@@ -180,7 +189,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     signup,
-    getToken
+    getToken,
+    updateProfileImage
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
