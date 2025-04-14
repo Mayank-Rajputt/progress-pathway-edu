@@ -34,9 +34,13 @@ const Welcome: React.FC = () => {
       <section className="relative bg-gradient-to-b from-primary/90 to-primary text-white py-24">
         <div className="container mx-auto px-4 text-center">
           <div className="flex justify-center mb-8">
-            <School size={80} />
+            <img 
+              src="/lovable-uploads/28048bd3-4188-4677-a707-e77bcf3a1aa5.png" 
+              alt="Trakdemy Logo" 
+              className="h-32"
+            />
           </div>
-          <h1 className="text-5xl font-bold mb-6">EduTrack</h1>
+          <h1 className="text-5xl font-bold mb-6">Trakdemy</h1>
           <p className="text-xl max-w-3xl mx-auto mb-10">
             A comprehensive student information management system for educational institutions
           </p>
@@ -189,11 +193,15 @@ const Welcome: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <School className="text-primary" size={24} />
-              <span className="text-xl font-bold">EduTrack</span>
+              <img 
+                src="/lovable-uploads/28048bd3-4188-4677-a707-e77bcf3a1aa5.png" 
+                alt="Trakdemy Logo" 
+                className="h-8"
+              />
+              <span className="text-xl font-bold">Trakdemy</span>
             </div>
             <div className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} EduTrack. All rights reserved.
+              &copy; {new Date().getFullYear()} Trakdemy. All rights reserved.
             </div>
           </div>
         </div>

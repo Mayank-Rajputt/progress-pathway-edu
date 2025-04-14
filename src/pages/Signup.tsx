@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { School } from 'lucide-react';
 
 const Signup: React.FC = () => {
   const [name, setName] = useState('');
@@ -43,8 +42,12 @@ const Signup: React.FC = () => {
       {/* Left panel with image/design */}
       <div className="hidden lg:flex lg:w-1/2 bg-primary justify-center items-center p-12">
         <div className="max-w-lg text-white">
-          <School size={80} className="mb-8" />
-          <h1 className="text-4xl font-bold mb-4">EduTrack</h1>
+          <img 
+            src="/lovable-uploads/28048bd3-4188-4677-a707-e77bcf3a1aa5.png" 
+            alt="Trakdemy Logo" 
+            className="mb-8 h-20"
+          />
+          <h1 className="text-4xl font-bold mb-4">Trakdemy</h1>
           <p className="text-xl mb-8">
             Join our platform to streamline your educational institution with our comprehensive student information management system.
           </p>
@@ -67,11 +70,15 @@ const Signup: React.FC = () => {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <div className="flex justify-center mb-2">
-              <School size={40} className="text-primary" />
+              <img 
+                src="/lovable-uploads/28048bd3-4188-4677-a707-e77bcf3a1aa5.png" 
+                alt="Trakdemy Logo" 
+                className="h-12"
+              />
             </div>
             <h2 className="text-3xl font-bold tracking-tight">Create an account</h2>
             <p className="text-muted-foreground mt-2">
-              Sign up for your EduTrack account
+              Sign up for your Trakdemy account
             </p>
           </div>
 
