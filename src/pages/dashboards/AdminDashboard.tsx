@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Users,
@@ -12,6 +13,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import RecentActivityWidget from '@/components/widgets/RecentActivityWidget';
 import AnnouncementsWidget from '@/components/widgets/AnnouncementsWidget';
+import TeacherAttendanceWidget from '@/components/widgets/TeacherAttendanceWidget';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -50,20 +52,28 @@ const AdminDashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Widgets */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="overflow-hidden">
+      {/* Teacher Attendance Card */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="overflow-hidden lg:col-span-2">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Announcements
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-teacher" />
+                Teacher Attendance
+              </CardTitle>
+              <Link 
+                to="/teacher-attendance" 
+                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                View All
+              </Link>
+            </div>
           </CardHeader>
           <CardContent>
-            <AnnouncementsWidget />
+            <TeacherAttendanceWidget />
           </CardContent>
         </Card>
-        
+
         <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -76,6 +86,19 @@ const AdminDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Announcements */}
+      <Card className="overflow-hidden">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Announcements
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AnnouncementsWidget />
+        </CardContent>
+      </Card>
     </div>
   );
 };

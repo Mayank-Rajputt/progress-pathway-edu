@@ -15,7 +15,8 @@ import {
   LogOut,
   Menu,
   X,
-  Bell
+  Bell,
+  CheckSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -25,7 +26,8 @@ const navItems: Record<UserRole, { name: string; path: string; icon: React.React
   admin: [
     { name: 'Dashboard', path: '/dashboard/admin', icon: <LayoutDashboard size={20} /> },
     { name: 'User Management', path: '/users', icon: <Users size={20} /> },
-    { name: 'Attendance', path: '/attendance', icon: <CalendarDays size={20} /> },
+    { name: 'Teacher Attendance', path: '/teacher-attendance', icon: <CheckSquare size={20} /> },
+    { name: 'Student Attendance', path: '/attendance', icon: <CalendarDays size={20} /> },
     { name: 'Marks', path: '/marks', icon: <GraduationCap size={20} /> },
     { name: 'Report Cards', path: '/report-cards', icon: <BookOpen size={20} /> },
     { name: 'Announcements', path: '/announcements', icon: <MessageSquare size={20} /> },

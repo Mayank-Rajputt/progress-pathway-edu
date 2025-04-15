@@ -1,9 +1,11 @@
 
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { UserModel } from '../models/userModel';
 import { StudentModel } from '../models/studentModel';
 import { AttendanceModel } from '../models/attendanceModel';
 import { MarkModel } from '../models/markModel';
+import { ReportCardModel } from '../models/reportCardModel';
 import { ApiError, asyncHandler } from '../middleware/errorMiddleware';
 
 // Get admin dashboard data

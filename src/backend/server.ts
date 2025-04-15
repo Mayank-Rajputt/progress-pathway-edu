@@ -10,6 +10,7 @@ import marksRoutes from './routes/marksRoutes';
 import reportCardRoutes from './routes/reportCardRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import uploadRoutes from './routes/uploadRoutes';
+import teacherAttendanceRoutes from './routes/teacherAttendanceRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 
 // Load environment variables
@@ -32,6 +33,7 @@ app.use('/api/marks', marksRoutes);
 app.use('/api/report-cards', reportCardRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/teacher-attendance', teacherAttendanceRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
