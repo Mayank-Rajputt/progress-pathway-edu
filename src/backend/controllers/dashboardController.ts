@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { UserModel } from '../models/userModel';
@@ -386,12 +385,17 @@ export const getStudentDashboard = asyncHandler(async (req: Request, res: Respon
     .sort({ generatedDate: -1 })
     .limit(3);
   
+  // Fix: Extract user name safely from populated document
+  const populatedData = student.toObject();
+  const userName = populatedData.userId && typeof populatedData.userId === 'object' ? 
+                  (populatedData.userId as any).name || 'Unknown' : 'Unknown';
+  
   res.json({
     success: true,
     data: {
       student: {
         id: student._id,
-        name: (student.populate?.userId as any)?.name,
+        name: userName,
         rollNumber: student.rollNumber,
         class: student.class,
         section: student.section
@@ -488,10 +492,15 @@ export const getParentDashboard = asyncHandler(async (req: Request, res: Respons
         .select('term academicYear percentage grade generatedDate')
         .sort({ generatedDate: -1 });
       
+      // Fix: Extract user name safely from populated document
+      const populatedData = child.toObject();
+      const userName = populatedData.userId && typeof populatedData.userId === 'object' ? 
+                      (populatedData.userId as any).name || 'Unknown' : 'Unknown';
+      
       return {
         student: {
           id: child._id,
-          name: (child.populate?.userId as any)?.name,
+          name: userName,
           rollNumber: child.rollNumber,
           class: child.class,
           section: child.section

@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { MarkModel } from '../models/markModel';
 import { StudentModel } from '../models/studentModel';
@@ -241,12 +240,17 @@ export const getStudentMarksSummary = asyncHandler(async (req: Request, res: Res
     ? Math.round((overallObtained / overallMaximum) * 100)
     : 0;
   
+  // Fix: Extract user name safely from populated document
+  const populatedData = student.toObject();
+  const userName = populatedData.userId && typeof populatedData.userId === 'object' ? 
+                  (populatedData.userId as any).name || 'Unknown' : 'Unknown';
+  
   res.json({
     success: true,
     data: {
       student: {
         id: student._id,
-        name: (student.populate?.userId as any)?.name,
+        name: userName,
         rollNumber: student.rollNumber,
         class: student.class,
         section: student.section

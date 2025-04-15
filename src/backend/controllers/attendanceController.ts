@@ -268,12 +268,17 @@ export const getAttendanceSummary = asyncHandler(async (req: Request, res: Respo
       : 0;
     
     const percentage = totalDays ? Math.round(((present + late) / totalDays) * 100) : 0;
+
+    // Fix: Extract user name safely from populated document
+    const populatedData = student.toObject();
+    const userName = populatedData.userId && typeof populatedData.userId === 'object' ? 
+                    (populatedData.userId as any).name || 'Unknown' : 'Unknown';
     
     return {
       student: {
         id: student._id,
         rollNumber: student.rollNumber,
-        name: (student.populate?.userId as any)?.name || 'Unknown'
+        name: userName
       },
       attendance: {
         present,
