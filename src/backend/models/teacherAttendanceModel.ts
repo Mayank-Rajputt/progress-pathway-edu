@@ -6,6 +6,7 @@ export interface ITeacherAttendance extends Document {
   date: Date;
   status: 'present' | 'absent';
   markedBy: mongoose.Types.ObjectId;
+  department?: string;
   remarks?: string;
 }
 
@@ -29,6 +30,9 @@ const teacherAttendanceSchema = new Schema<ITeacherAttendance>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Marked by user ID is required']
+    },
+    department: {
+      type: String
     },
     remarks: {
       type: String

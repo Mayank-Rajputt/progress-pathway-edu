@@ -6,10 +6,12 @@ export interface IStudent extends Document {
   rollNumber: string;
   class: string;
   section: string;
+  department: string;
   dateOfBirth: Date;
   parentId: mongoose.Types.ObjectId;
   contactNumber: string;
   address: string;
+  populate?: any; // Add this to fix TypeScript errors
 }
 
 const studentSchema = new Schema<IStudent>(
@@ -31,6 +33,10 @@ const studentSchema = new Schema<IStudent>(
     section: {
       type: String,
       required: [true, 'Section is required']
+    },
+    department: {
+      type: String,
+      required: [true, 'Department is required']
     },
     dateOfBirth: {
       type: Date,

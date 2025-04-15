@@ -6,8 +6,11 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
-  role: 'admin' | 'teacher' | 'student' | 'parent';
+  role: 'admin' | 'department_admin' | 'teacher' | 'student' | 'parent';
+  department?: string;
   profileImage?: string;
+  phoneNumber?: string;
+  isMainAdmin?: boolean;
   matchPassword: (enteredPassword: string) => Promise<boolean>;
 }
 
@@ -33,11 +36,21 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ['admin', 'teacher', 'student', 'parent'],
+      enum: ['admin', 'department_admin', 'teacher', 'student', 'parent'],
       required: [true, 'Role is required']
+    },
+    department: {
+      type: String
     },
     profileImage: {
       type: String
+    },
+    phoneNumber: {
+      type: String
+    },
+    isMainAdmin: {
+      type: Boolean,
+      default: false
     }
   },
   {

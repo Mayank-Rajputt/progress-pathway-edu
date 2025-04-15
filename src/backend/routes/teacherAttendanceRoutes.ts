@@ -11,15 +11,14 @@ import { protect, authorize } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-// All routes are protected and only admin can access
+// All routes are protected
 router.use(protect);
-router.use(authorize('admin'));
 
-// Teacher attendance routes
-router.get('/teachers', getAllTeachers);
-router.post('/', markTeacherAttendance);
-router.post('/bulk', markBulkTeacherAttendance);
-router.get('/', getTeacherAttendanceRecords);
-router.get('/summary', getTeacherAttendanceSummary);
+// Teacher attendance routes with proper authorization
+router.get('/teachers', authorize('admin', 'department_admin'), getAllTeachers);
+router.post('/', authorize('admin', 'department_admin'), markTeacherAttendance);
+router.post('/bulk', authorize('admin', 'department_admin'), markBulkTeacherAttendance);
+router.get('/', authorize('admin', 'department_admin', 'teacher'), getTeacherAttendanceRecords);
+router.get('/summary', authorize('admin', 'department_admin'), getTeacherAttendanceSummary);
 
 export default router;

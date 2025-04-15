@@ -56,6 +56,41 @@ export const authorize = (...roles: string[]) => {
       throw new ApiError(403, `Role (${req.user.role}) is not authorized to access this resource`);
     }
     
+    // Special case for main admin
+    if (req.user.role === 'admin' && req.user.isMainAdmin) {
+      return next(); // Main admin can access everything
+    }
+    
     next();
   };
+};
+
+// Department-based access control middleware
+export const authorizeForDepartment = (paramName: string = 'departmentId') => {
+  return asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      throw new ApiError(401, 'Not authorized');
+    }
+    
+    // Main admin can access any department
+    if (req.user.role === 'admin' && req.user.isMainAdmin) {
+      return next();
+    }
+    
+    // Get department from request parameter
+    const departmentId = req.params[paramName];
+    
+    if (!departmentId) {
+      return next(); // No department specified, continue
+    }
+    
+    // For department admins, check if they have access to this department
+    if (req.user.role === 'department_admin') {
+      if (req.user.department !== departmentId) {
+        throw new ApiError(403, 'You do not have access to this department');
+      }
+    }
+    
+    next();
+  });
 };

@@ -1,18 +1,22 @@
 
 import { Request, Response } from 'express';
-import { ReportCardModel } from '../models/reportCardModel';
+import { ReportCardModel, IReportCard } from '../models/reportCardModel';
 import { StudentModel } from '../models/studentModel';
 import { MarkModel } from '../models/markModel';
 import { AttendanceModel } from '../models/attendanceModel';
+import { UserModel } from '../models/userModel';
 import { ApiError, asyncHandler } from '../middleware/errorMiddleware';
 import { z } from 'zod';
 import mongoose from 'mongoose';
+import { generateReportCardPDF } from '../utils/pdfGenerator';
+import path from 'path';
 
 // Validate report card input
 const reportCardSchema = z.object({
   studentId: z.string(),
   term: z.string(),
-  academicYear: z.string()
+  academicYear: z.string(),
+  department: z.string().optional()
 });
 
 // Calculate grade based on percentage
@@ -39,6 +43,13 @@ export const generateReportCard = asyncHandler(async (req: Request, res: Respons
   
   if (!student) {
     throw new ApiError(404, 'Student not found');
+  }
+  
+  // Check department access for department admins
+  if (req.user.role === 'department_admin' && 
+      req.user.department && 
+      student.department !== req.user.department) {
+    throw new ApiError(403, 'You do not have access to students from other departments');
   }
   
   // Check if report card already exists
@@ -113,6 +124,7 @@ export const generateReportCard = asyncHandler(async (req: Request, res: Respons
     academicYear: validatedData.academicYear,
     class: student.class,
     section: student.section,
+    department: student.department,
     subjects: subjectsData,
     totalMarks,
     totalObtainedMarks,
@@ -142,7 +154,8 @@ export const getReportCards = asyncHandler(async (req: Request, res: Response) =
     term, 
     academicYear, 
     class: className, 
-    section 
+    section,
+    department
   } = req.query;
   
   // Build query
@@ -153,6 +166,35 @@ export const getReportCards = asyncHandler(async (req: Request, res: Response) =
   if (academicYear) query.academicYear = academicYear;
   if (className) query.class = className;
   if (section) query.section = section;
+  
+  // Apply department filter for department admins
+  if (req.user.role === 'department_admin' && req.user.department) {
+    query.department = req.user.department;
+  } 
+  // If department is specified and user is authorized
+  else if (department && ['admin', 'department_admin'].includes(req.user.role)) {
+    query.department = department;
+  }
+  
+  // For students, only show their own report cards
+  if (req.user.role === 'student') {
+    const student = await StudentModel.findOne({ userId: req.user._id });
+    if (student) {
+      query.studentId = student._id;
+    } else {
+      throw new ApiError(404, 'Student profile not found');
+    }
+  }
+  
+  // For parents, only show their children's report cards
+  if (req.user.role === 'parent') {
+    const children = await StudentModel.find({ parentId: req.user._id });
+    if (children.length > 0) {
+      query.studentId = { $in: children.map(child => child._id) };
+    } else {
+      throw new ApiError(404, 'No children found');
+    }
+  }
   
   // Execute query
   const reportCards = await ReportCardModel.find(query)
@@ -193,13 +235,99 @@ export const getReportCardById = asyncHandler(async (req: Request, res: Response
       select: 'name'
     });
   
-  if (reportCard) {
-    res.json({
-      success: true,
-      data: reportCard
-    });
-  } else {
+  if (!reportCard) {
     throw new ApiError(404, 'Report card not found');
+  }
+  
+  // Check access permissions
+  if (req.user.role === 'student') {
+    const student = await StudentModel.findOne({ userId: req.user._id });
+    if (!student || student._id.toString() !== reportCard.studentId.toString()) {
+      throw new ApiError(403, 'You do not have permission to view this report card');
+    }
+  }
+  
+  if (req.user.role === 'parent') {
+    const children = await StudentModel.find({ parentId: req.user._id });
+    const childIds = children.map(child => child._id.toString());
+    if (!childIds.includes(reportCard.studentId.toString())) {
+      throw new ApiError(403, 'You do not have permission to view this report card');
+    }
+  }
+  
+  // Check department access for department admins
+  if (req.user.role === 'department_admin' && 
+      req.user.department && 
+      reportCard.department !== req.user.department) {
+    throw new ApiError(403, 'You do not have access to report cards from other departments');
+  }
+  
+  res.json({
+    success: true,
+    data: reportCard
+  });
+});
+
+// Download report card as PDF
+export const downloadReportCardPDF = asyncHandler(async (req: Request, res: Response) => {
+  const reportCard = await ReportCardModel.findById(req.params.id)
+    .populate({
+      path: 'studentId',
+      select: 'rollNumber userId',
+      populate: {
+        path: 'userId',
+        select: 'name'
+      }
+    });
+  
+  if (!reportCard) {
+    throw new ApiError(404, 'Report card not found');
+  }
+  
+  // Check access permissions
+  if (req.user.role === 'student') {
+    const student = await StudentModel.findOne({ userId: req.user._id });
+    if (!student || student._id.toString() !== reportCard.studentId.toString()) {
+      throw new ApiError(403, 'You do not have permission to download this report card');
+    }
+  }
+  
+  if (req.user.role === 'parent') {
+    const children = await StudentModel.find({ parentId: req.user._id });
+    const childIds = children.map(child => child._id.toString());
+    if (!childIds.includes(reportCard.studentId.toString())) {
+      throw new ApiError(403, 'You do not have permission to download this report card');
+    }
+  }
+  
+  // Check department access for department admins
+  if (req.user.role === 'department_admin' && 
+      req.user.department && 
+      reportCard.department !== req.user.department) {
+    throw new ApiError(403, 'You do not have access to report cards from other departments');
+  }
+  
+  try {
+    // Get student name
+    const studentUser = await UserModel.findById((reportCard.studentId as any).userId);
+    const studentName = studentUser ? studentUser.name : 'Unknown Student';
+    
+    // Generate PDF
+    const pdfPath = await generateReportCardPDF(reportCard as unknown as IReportCard, studentName);
+    
+    // Set response headers for download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=report_card_${reportCard._id}.pdf`);
+    
+    // Send the file
+    res.sendFile(pdfPath, (err) => {
+      if (err) {
+        console.error('Error sending file:', err);
+      }
+    });
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    throw new ApiError(500, 'Failed to generate PDF report card');
   }
 });
 
@@ -215,6 +343,13 @@ export const updateReportCardRemarks = asyncHandler(async (req: Request, res: Re
   
   if (!reportCard) {
     throw new ApiError(404, 'Report card not found');
+  }
+  
+  // Check department access for department admins
+  if (req.user.role === 'department_admin' && 
+      req.user.department && 
+      reportCard.department !== req.user.department) {
+    throw new ApiError(403, 'You do not have access to report cards from other departments');
   }
   
   reportCard.teacherRemarks = teacherRemarks;

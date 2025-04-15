@@ -4,11 +4,45 @@ import mongoose from 'mongoose';
 import { TeacherAttendanceModel } from '../models/teacherAttendanceModel';
 import { UserModel } from '../models/userModel';
 import { ApiError, asyncHandler } from '../middleware/errorMiddleware';
+import { z } from 'zod';
+
+// Validation schemas
+const teacherAttendanceSchema = z.object({
+  teacherId: z.string(),
+  date: z.string(),
+  status: z.enum(['present', 'absent']),
+  remarks: z.string().optional()
+});
+
+const bulkAttendanceSchema = z.object({
+  date: z.string(),
+  attendanceRecords: z.array(
+    z.object({
+      teacherId: z.string(),
+      status: z.enum(['present', 'absent']),
+      remarks: z.string().optional()
+    })
+  )
+});
 
 // Get all teachers
 export const getAllTeachers = asyncHandler(async (req: Request, res: Response) => {
-  const teachers = await UserModel.find({ role: 'teacher' })
-    .select('_id name email')
+  const { department } = req.query;
+  
+  // Apply department filter for department admins
+  const filter: any = { role: 'teacher' };
+  
+  // If user is department admin, restrict to their department
+  if (req.user.role === 'department_admin' && req.user.department) {
+    filter.department = req.user.department;
+  }
+  // If main admin with department filter
+  else if (req.user.role === 'admin' && department) {
+    filter.department = department;
+  }
+  
+  const teachers = await UserModel.find(filter)
+    .select('_id name email department phoneNumber')
     .sort({ name: 1 });
   
   res.json({
@@ -19,18 +53,22 @@ export const getAllTeachers = asyncHandler(async (req: Request, res: Response) =
 
 // Mark teacher attendance
 export const markTeacherAttendance = asyncHandler(async (req: Request, res: Response) => {
-  const { teacherId, date, status, remarks } = req.body;
-  
-  // Validate input
-  if (!teacherId || !date || !status) {
-    throw new ApiError(400, 'Please provide teacherId, date, and status');
-  }
+  // Validate request body
+  const validatedData = teacherAttendanceSchema.parse(req.body);
+  const { teacherId, date, status, remarks } = validatedData;
   
   // Check if the teacher exists
   const teacher = await UserModel.findOne({ _id: teacherId, role: 'teacher' });
   
   if (!teacher) {
     throw new ApiError(404, 'Teacher not found');
+  }
+  
+  // Check department access for department admins
+  if (req.user.role === 'department_admin' && 
+      req.user.department && 
+      teacher.department !== req.user.department) {
+    throw new ApiError(403, 'You can only mark attendance for teachers in your department');
   }
   
   // Parse date and validate
@@ -69,6 +107,7 @@ export const markTeacherAttendance = asyncHandler(async (req: Request, res: Resp
       teacherId,
       date: attendanceDate,
       status,
+      department: teacher.department,
       remarks,
       markedBy: req.user._id
     });
@@ -83,12 +122,9 @@ export const markTeacherAttendance = asyncHandler(async (req: Request, res: Resp
 
 // Mark bulk teacher attendance
 export const markBulkTeacherAttendance = asyncHandler(async (req: Request, res: Response) => {
-  const { date, attendanceRecords } = req.body;
-  
-  // Validate input
-  if (!date || !attendanceRecords || !Array.isArray(attendanceRecords)) {
-    throw new ApiError(400, 'Please provide date and attendance records array');
-  }
+  // Validate request body
+  const validatedData = bulkAttendanceSchema.parse(req.body);
+  const { date, attendanceRecords } = validatedData;
   
   // Parse date and validate
   const attendanceDate = new Date(date);
@@ -116,6 +152,13 @@ export const markBulkTeacherAttendance = asyncHandler(async (req: Request, res: 
         throw new ApiError(404, `Teacher with ID ${teacherId} not found`);
       }
       
+      // Check department access for department admins
+      if (req.user.role === 'department_admin' && 
+          req.user.department && 
+          teacher.department !== req.user.department) {
+        throw new ApiError(403, `You cannot mark attendance for teacher ${teacher.name} from another department`);
+      }
+      
       // Check if the attendance record already exists
       const existingRecord = await TeacherAttendanceModel.findOne({
         teacherId,
@@ -138,6 +181,7 @@ export const markBulkTeacherAttendance = asyncHandler(async (req: Request, res: 
           teacherId,
           date: attendanceDate,
           status,
+          department: teacher.department,
           remarks,
           markedBy: req.user._id
         }], { session });
@@ -163,15 +207,26 @@ export const markBulkTeacherAttendance = asyncHandler(async (req: Request, res: 
 
 // Get teacher attendance records
 export const getTeacherAttendanceRecords = asyncHandler(async (req: Request, res: Response) => {
-  const { teacherId, startDate, endDate } = req.query;
+  const { teacherId, department, startDate, endDate } = req.query;
   
   // Build filter
   const filter: any = {};
   
+  // Apply teacherId filter if provided
   if (teacherId) {
     filter.teacherId = teacherId;
   }
   
+  // Apply department filter for department admins
+  if (req.user.role === 'department_admin' && req.user.department) {
+    filter.department = req.user.department;
+  }
+  // If department is specified and user is authorized
+  else if (department && ['admin', 'department_admin'].includes(req.user.role)) {
+    filter.department = department;
+  }
+  
+  // Apply date filters
   if (startDate || endDate) {
     filter.date = {};
     
@@ -186,7 +241,7 @@ export const getTeacherAttendanceRecords = asyncHandler(async (req: Request, res
   
   // Get attendance records
   const attendanceRecords = await TeacherAttendanceModel.find(filter)
-    .populate('teacherId', 'name email')
+    .populate('teacherId', 'name email department phoneNumber')
     .populate('markedBy', 'name role')
     .sort({ date: -1 });
   
@@ -199,23 +254,37 @@ export const getTeacherAttendanceRecords = asyncHandler(async (req: Request, res
 
 // Get teacher attendance summary
 export const getTeacherAttendanceSummary = asyncHandler(async (req: Request, res: Response) => {
-  const { startDate, endDate } = req.query;
+  const { department, startDate, endDate } = req.query;
   
-  // Build date filter
-  const dateFilter: any = {};
+  // Build filters
+  const matchFilter: any = {};
   
-  if (startDate) {
-    dateFilter.$gte = new Date(startDate.toString());
+  // Apply department filter for department admins
+  if (req.user.role === 'department_admin' && req.user.department) {
+    matchFilter.department = req.user.department;
+  }
+  // If department is specified and user is authorized
+  else if (department && ['admin', 'department_admin'].includes(req.user.role)) {
+    matchFilter.department = department;
   }
   
-  if (endDate) {
-    dateFilter.$lte = new Date(endDate.toString());
+  // Add date filter if provided
+  if (startDate || endDate) {
+    matchFilter.date = {};
+    
+    if (startDate) {
+      matchFilter.date.$gte = new Date(startDate.toString());
+    }
+    
+    if (endDate) {
+      matchFilter.date.$lte = new Date(endDate.toString());
+    }
   }
   
   // Get attendance summary
   const attendanceSummary = await TeacherAttendanceModel.aggregate([
     {
-      $match: startDate || endDate ? { date: dateFilter } : {}
+      $match: matchFilter
     },
     {
       $group: {
@@ -230,7 +299,8 @@ export const getTeacherAttendanceSummary = asyncHandler(async (req: Request, res
           $sum: {
             $cond: [{ $eq: ['$status', 'absent'] }, 1, 0]
           }
-        }
+        },
+        department: { $first: '$department' }
       }
     },
     {
@@ -250,6 +320,8 @@ export const getTeacherAttendanceSummary = asyncHandler(async (req: Request, res
         teacherId: '$_id',
         name: '$teacher.name',
         email: '$teacher.email',
+        department: '$department',
+        phoneNumber: '$teacher.phoneNumber',
         totalDays: 1,
         present: 1,
         absent: 1,
