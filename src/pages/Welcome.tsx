@@ -39,7 +39,7 @@ const Welcome: React.FC = () => {
             <img 
               src="/lovable-uploads/098aba0b-f4d7-4326-ac4f-d97268594b9e.png" 
               alt="Trakdemy Logo" 
-              className="h-24 md:h-32"
+              className="h-32 md:h-48 w-auto" 
             />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4 md:mb-6">Trakdemy</h1>
