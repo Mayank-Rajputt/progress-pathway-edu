@@ -1,6 +1,7 @@
 
 import mongoose, { Schema, Document } from 'mongoose';
 
+// Fix: remove 'populate' from interface to match Document requirements
 export interface IStudent extends Document {
   userId: mongoose.Types.ObjectId;
   rollNumber: string;
@@ -11,7 +12,6 @@ export interface IStudent extends Document {
   parentId: mongoose.Types.ObjectId;
   contactNumber: string;
   address: string;
-  populate?: any; // Add this to fix TypeScript errors
 }
 
 const studentSchema = new Schema<IStudent>(

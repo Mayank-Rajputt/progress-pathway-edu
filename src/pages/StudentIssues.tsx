@@ -284,7 +284,8 @@ const StudentIssues = () => {
           {user?.role === 'student' && (
             <TabsTrigger value="create-issue">Submit New Issue</TabsTrigger>
           )}
-          {!user?.role === 'student' && (
+          {/* Fix: Change comparison from !== to !== 'student' to compare strings properly */}
+          {user?.role !== 'student' && (
             <TabsTrigger value="issue-stats">Issue Statistics</TabsTrigger>
           )}
         </TabsList>

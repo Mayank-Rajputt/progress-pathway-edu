@@ -192,7 +192,8 @@ export const deleteIssue = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(403, 'You do not have permission to delete issues from other departments');
   }
   
-  await issue.remove();
+  // Fix: Use deleteOne() instead of remove() as remove() is deprecated
+  await StudentIssueModel.deleteOne({ _id: issue._id });
   
   res.json({
     success: true,
