@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle, Clock, Edit, MessageSquare, Search, Trash, User } from 'lucide-react';
@@ -420,9 +419,8 @@ const StudentIssues: React.FC = () => {
                       )}
                       
                       {(user?.role === 'admin' ||
-                        // Fix: Compare string with boolean, change to string comparison
                         (user?.role === 'student' && 
-                         user?._id === issueDetails.data.submittedBy._id)) && (
+                         user._id === issueDetails.data.submittedBy._id)) && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="destructive" size="sm">
@@ -539,7 +537,7 @@ const StudentIssues: React.FC = () => {
                       </div>
                     )}
                     
-                    {(user?.role === 'teacher' || user?.role === 'admin' || user?._id === issueDetails.data.submittedBy._id) && (
+                    {(user?.role === 'teacher' || user?.role === 'admin' || user._id === issueDetails.data.submittedBy._id) && (
                       <div>
                         <h4 className="font-medium mb-2">Add Comment</h4>
                         <div className="flex gap-2">
@@ -585,7 +583,6 @@ const StudentIssues: React.FC = () => {
         </div>
       </div>
       
-      {/* Create Issue Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -669,7 +666,6 @@ const StudentIssues: React.FC = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Update Issue Dialog */}
       <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
         <DialogContent>
           <DialogHeader>

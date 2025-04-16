@@ -2,24 +2,24 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IStudentIssue extends Document {
-  studentId: mongoose.Types.ObjectId;
   title: string;
   description: string;
-  status: 'pending' | 'in_progress' | 'resolved' | 'rejected';
-  category: 'academic' | 'technical' | 'facilities' | 'other';
-  department?: string;
+  status: 'pending' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high';
+  category: 'academic' | 'administrative' | 'technical' | 'facilities' | 'other';
+  submittedBy: mongoose.Types.ObjectId;
   assignedTo?: mongoose.Types.ObjectId;
   resolution?: string;
-  attachments?: string[];
+  attachmentUrl?: string;
+  comments: Array<{
+    text: string;
+    user: mongoose.Types.ObjectId;
+    timestamp: Date;
+  }>;
 }
 
 const studentIssueSchema = new Schema<IStudentIssue>(
   {
-    studentId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Student ID is required']
-    },
     title: {
       type: String,
       required: [true, 'Title is required'],
@@ -31,16 +31,23 @@ const studentIssueSchema = new Schema<IStudentIssue>(
     },
     status: {
       type: String,
-      enum: ['pending', 'in_progress', 'resolved', 'rejected'],
+      enum: ['pending', 'in_progress', 'resolved', 'closed'],
       default: 'pending'
+    },
+    priority: {
+      type: String,
+      enum: ['low', 'medium', 'high'],
+      default: 'medium'
     },
     category: {
       type: String,
-      enum: ['academic', 'technical', 'facilities', 'other'],
+      enum: ['academic', 'administrative', 'technical', 'facilities', 'other'],
       required: [true, 'Category is required']
     },
-    department: {
-      type: String
+    submittedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Student ID is required']
     },
     assignedTo: {
       type: Schema.Types.ObjectId,
@@ -49,9 +56,24 @@ const studentIssueSchema = new Schema<IStudentIssue>(
     resolution: {
       type: String
     },
-    attachments: {
-      type: [String]
-    }
+    attachmentUrl: {
+      type: String
+    },
+    comments: [{
+      text: {
+        type: String,
+        required: true
+      },
+      user: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+      },
+      timestamp: {
+        type: Date,
+        default: Date.now
+      }
+    }]
   },
   {
     timestamps: true

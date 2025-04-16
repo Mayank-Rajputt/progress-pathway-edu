@@ -19,6 +19,7 @@ router.post('/', authorize('student'), createStudentIssue);
 router.get('/', getAllIssues);
 router.get('/:id', getIssueById);
 router.put('/:id', authorize('admin', 'department_admin', 'teacher'), updateIssue);
-router.delete('/:id', authorize('admin', 'department_admin'), deleteIssue);
+// Updated to allow students to delete their own issues
+router.delete('/:id', deleteIssue);
 
 export default router;

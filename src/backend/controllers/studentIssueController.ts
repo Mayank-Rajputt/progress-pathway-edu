@@ -9,7 +9,7 @@ const studentIssueSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   priority: z.enum(['low', 'medium', 'high']),
-  category: z.enum(['academic', 'administrative', 'technical', 'other']),
+  category: z.enum(['academic', 'administrative', 'technical', 'facilities', 'other']),
   attachmentUrl: z.string().optional(),
 });
 
@@ -27,6 +27,7 @@ export const createStudentIssue = asyncHandler(async (req: Request, res: Respons
     attachmentUrl: validatedData.attachmentUrl,
     submittedBy: req.user._id,
     status: 'pending',
+    comments: []
   });
   
   res.status(201).json({
@@ -169,6 +170,11 @@ export const updateIssue = asyncHandler(async (req: Request, res: Response) => {
   
   // Add comment if provided
   if (validatedData.comment) {
+    // Initialize comments array if it doesn't exist
+    if (!issue.comments) {
+      issue.comments = [];
+    }
+    
     issue.comments.push({
       text: validatedData.comment,
       user: req.user._id,
@@ -217,7 +223,7 @@ export const deleteIssue = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(403, 'You do not have permission to delete this issue');
   }
   
-  // Fix: Use deleteOne() instead of remove()
+  // Use deleteOne() instead of remove()
   await issue.deleteOne();
   
   res.json({
