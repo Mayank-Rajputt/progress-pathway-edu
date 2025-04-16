@@ -46,22 +46,6 @@ const Login: React.FC = () => {
     setForgotPasswordEmail('');
   };
 
-  const loginAsDemoUser = async (type: 'admin' | 'teacher' | 'student' | 'parent') => {
-    setIsSubmitting(true);
-    const demoCredentials = {
-      admin: { email: 'admin@trakdemy.com', password: 'admin123' },
-      teacher: { email: 'teacher@trakdemy.com', password: 'teacher123' },
-      student: { email: 'student@trakdemy.com', password: 'student123' },
-      parent: { email: 'parent@trakdemy.com', password: 'parent123' },
-    };
-    
-    try {
-      await login(demoCredentials[type].email, demoCredentials[type].password);
-    } catch (error) {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="flex min-h-screen">
       {/* Left panel with image/design */}
@@ -152,50 +136,6 @@ const Login: React.FC = () => {
               </p>
             </div>
           </form>
-
-          <div className="space-y-4 pt-4 border-t">
-            <div className="text-center text-sm text-muted-foreground">
-              Demo accounts
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-admin text-admin hover:bg-admin hover:text-white"
-                onClick={() => loginAsDemoUser('admin')}
-                disabled={isSubmitting}
-              >
-                Admin Demo
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-teacher text-teacher hover:bg-teacher hover:text-white"
-                onClick={() => loginAsDemoUser('teacher')}
-                disabled={isSubmitting}
-              >
-                Teacher Demo
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-student text-student hover:bg-student hover:text-white"
-                onClick={() => loginAsDemoUser('student')}
-                disabled={isSubmitting}
-              >
-                Student Demo
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-parent text-parent hover:bg-parent hover:text-white"
-                onClick={() => loginAsDemoUser('parent')}
-                disabled={isSubmitting}
-              >
-                Parent Demo
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
 
