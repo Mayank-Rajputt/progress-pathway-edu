@@ -2,6 +2,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import axios from 'axios';
+
+// API base URL - would come from environment variables in a real production app
+const API_URL = '/api';
 
 export type UserRole = 'admin' | 'department_admin' | 'teacher' | 'student' | 'parent';
 
@@ -22,7 +26,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  signup: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
+  signup: (name: string, email: string, password: string, role: UserRole, department?: string) => Promise<void>;
   getToken: () => string | null;
   updateProfileImage: (imageUrl: string | null) => void;
   updateUserDetails: (details: Partial<User>) => void;
@@ -30,54 +34,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demo purposes
-const MOCK_USERS: User[] = [
-  {
-    id: '1',
-    name: 'Admin User',
-    email: 'admin@trakdemy.com',
-    role: 'admin',
-    profileImage: 'https://ui-avatars.com/api/?background=1A73E8&color=fff&name=Admin+User'
-  },
-  {
-    id: '2',
-    name: 'Teacher Smith',
-    email: 'teacher@trakdemy.com',
-    role: 'teacher',
-    profileImage: 'https://ui-avatars.com/api/?background=8B5CF6&color=fff&name=Teacher+Smith',
-    department: 'Science'
-  },
-  {
-    id: '3',
-    name: 'Student Johnson',
-    email: 'student@trakdemy.com',
-    role: 'student',
-    profileImage: 'https://ui-avatars.com/api/?background=10B981&color=fff&name=Student+Johnson'
-  },
-  {
-    id: '4',
-    name: 'Parent Davis',
-    email: 'parent@trakdemy.com',
-    role: 'parent',
-    profileImage: 'https://ui-avatars.com/api/?background=F59E0B&color=fff&name=Parent+Davis'
-  },
-  {
-    id: '5',
-    name: 'Department Admin',
-    email: 'department@trakdemy.com',
-    role: 'department_admin',
-    department: 'Mathematics',
-    profileImage: 'https://ui-avatars.com/api/?background=EC4899&color=fff&name=Department+Admin'
+// Set auth token for axios requests
+const setAuthToken = (token: string | null) => {
+  if (token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete axios.defaults.headers.common['Authorization'];
   }
-];
-
-// Mock passwords (in a real app, these would be hashed in the database)
-const MOCK_PASSWORDS: Record<string, string> = {
-  'admin@trakdemy.com': 'admin123',
-  'teacher@trakdemy.com': 'teacher123',
-  'student@trakdemy.com': 'student123',
-  'parent@trakdemy.com': 'parent123',
-  'department@trakdemy.com': 'department123'
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -87,37 +50,100 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Check for saved auth on load
-    const savedUser = localStorage.getItem('trakdemy_user');
     const savedToken = localStorage.getItem('trakdemy_token');
-
-    if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
-    }
     
-    setIsLoading(false);
+    if (savedToken) {
+      setAuthToken(savedToken);
+      loadUser();
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
-  const updateProfileImage = (imageUrl: string | null) => {
-    if (user) {
-      const updatedUser = { ...user, profileImage: imageUrl };
-      setUser(updatedUser);
-      localStorage.setItem('trakdemy_user', JSON.stringify(updatedUser));
+  // Load user data from token
+  const loadUser = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/auth/profile`);
+      
+      if (response.data.success) {
+        const userData = response.data.data;
+        setUser({
+          id: userData._id,
+          _id: userData._id,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          profileImage: userData.profileImage,
+          department: userData.department,
+          phoneNumber: userData.phoneNumber
+        });
+      }
+    } catch (error) {
+      // Invalid token - clear storage
+      localStorage.removeItem('trakdemy_token');
+      localStorage.removeItem('trakdemy_user');
+      setAuthToken(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const updateUserDetails = (details: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...details };
-      setUser(updatedUser);
-      localStorage.setItem('trakdemy_user', JSON.stringify(updatedUser));
-      
-      // Update the MOCK_USERS array for this session
-      const userIndex = MOCK_USERS.findIndex(u => u.id === user.id);
-      if (userIndex !== -1) {
-        MOCK_USERS[userIndex] = { ...MOCK_USERS[userIndex], ...details };
+  const updateProfileImage = async (imageUrl: string | null) => {
+    try {
+      if (user) {
+        const response = await axios.put(`${API_URL}/auth/profile`, {
+          profileImage: imageUrl
+        });
+        
+        if (response.data.success) {
+          const updatedUser = { ...user, profileImage: imageUrl };
+          setUser(updatedUser);
+          localStorage.setItem('trakdemy_user', JSON.stringify(updatedUser));
+          toast.success('Profile image updated successfully');
+        }
       }
-      
-      toast.success('User details updated successfully');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update profile image');
+    }
+  };
+
+  const updateUserDetails = async (details: Partial<User>) => {
+    try {
+      if (user) {
+        // For admin updating other users
+        if (details._id && user.role === 'admin' && details._id !== user._id) {
+          const response = await axios.put(`${API_URL}/users/${details._id}`, details);
+          
+          if (response.data.success) {
+            toast.success('User details updated successfully');
+          }
+          return;
+        }
+        
+        // For updating own profile
+        const response = await axios.put(`${API_URL}/auth/profile`, details);
+        
+        if (response.data.success) {
+          const userData = response.data.data;
+          const updatedUser = { 
+            ...user, 
+            ...details,
+            // Ensure we get these from the server response
+            name: userData.name,
+            email: userData.email,
+            role: userData.role,
+            profileImage: userData.profileImage,
+            department: userData.department,
+            phoneNumber: userData.phoneNumber
+          };
+          
+          setUser(updatedUser);
+          localStorage.setItem('trakdemy_user', JSON.stringify(updatedUser));
+          toast.success('User details updated successfully');
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update user details');
     }
   };
 
@@ -125,83 +151,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      // Simulate API request
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await axios.post(`${API_URL}/auth/login`, {
+        email,
+        password
+      });
       
-      // In a real app, this would be a proper API call with JWT
-      const foundUser = MOCK_USERS.find(u => u.email === email);
-      
-      if (!foundUser || MOCK_PASSWORDS[email] !== password) {
-        throw new Error('Invalid credentials');
+      if (response.data.success) {
+        const userData = response.data.data;
+        const token = userData.token;
+        
+        // Set token in local storage and axios headers
+        localStorage.setItem('trakdemy_token', token);
+        setAuthToken(token);
+        
+        // Set user data
+        const userToSave = {
+          id: userData._id,
+          _id: userData._id,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          profileImage: userData.profileImage,
+          department: userData.department,
+          phoneNumber: userData.phoneNumber
+        };
+        
+        localStorage.setItem('trakdemy_user', JSON.stringify(userToSave));
+        setUser(userToSave);
+        
+        // Redirect based on role
+        navigate(`/dashboard/${userData.role}`);
+        toast.success(`Welcome back, ${userData.name}!`);
       }
-      
-      // Create mock token (in a real app this would be a JWT)
-      const token = `mock-jwt-token-${foundUser.id}-${Date.now()}`;
-      
-      // Add _id property to match backend models' expectations
-      const userWithId = { ...foundUser, _id: foundUser.id };
-      
-      // Save to localStorage
-      localStorage.setItem('trakdemy_token', token);
-      localStorage.setItem('trakdemy_user', JSON.stringify(userWithId));
-      
-      setUser(userWithId);
-      
-      // Redirect based on role
-      navigate(`/dashboard/${foundUser.role}`);
-      toast.success(`Welcome back, ${foundUser.name}!`);
     } catch (error: any) {
-      toast.error(error.message || 'Login failed');
+      toast.error(error.response?.data?.message || 'Login failed');
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signup = async (name: string, email: string, password: string, role: UserRole) => {
+  const signup = async (name: string, email: string, password: string, role: UserRole, department?: string) => {
     setIsLoading(true);
     
     try {
-      // Simulate API request
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Check if email already exists
-      if (MOCK_USERS.some(u => u.email === email)) {
-        throw new Error('Email already registered');
-      }
-      
-      // Create new user (in a real app, this would be saved to a database)
-      const newUser: User = {
-        id: `${MOCK_USERS.length + 1}`,
+      const userData = {
         name,
         email,
+        password,
         role,
-        profileImage: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`
+        department
       };
       
-      // In a real app, we would add the user to the database here
-      // For this demo, we'll just pretend we did
+      const response = await axios.post(`${API_URL}/auth/register`, userData);
       
-      // Create mock token (in a real app this would be a JWT)
-      const token = `mock-jwt-token-${newUser.id}-${Date.now()}`;
-      
-      // Add _id property to match backend models
-      const userWithId = { ...newUser, _id: newUser.id };
-      
-      // Save to localStorage
-      localStorage.setItem('trakdemy_token', token);
-      localStorage.setItem('trakdemy_user', JSON.stringify(userWithId));
-      
-      // Update mock users array for this session
-      MOCK_USERS.push(newUser);
-      MOCK_PASSWORDS[email] = password;
-      
-      setUser(userWithId);
-      
-      navigate(`/dashboard/${newUser.role}`);
-      toast.success('Account created successfully!');
+      if (response.data.success) {
+        const userData = response.data.data;
+        const token = userData.token;
+        
+        // Set token in local storage and axios headers
+        localStorage.setItem('trakdemy_token', token);
+        setAuthToken(token);
+        
+        // Set user data
+        const userToSave = {
+          id: userData._id,
+          _id: userData._id,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          profileImage: userData.profileImage,
+          department: userData.department,
+          phoneNumber: userData.phoneNumber
+        };
+        
+        localStorage.setItem('trakdemy_user', JSON.stringify(userToSave));
+        setUser(userToSave);
+        
+        // Redirect based on role
+        navigate(`/dashboard/${userData.role}`);
+        toast.success('Account created successfully!');
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Signup failed');
+      toast.error(error.response?.data?.message || 'Signup failed');
       throw error;
     } finally {
       setIsLoading(false);
@@ -209,8 +241,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    // Clear everything from storage
     localStorage.removeItem('trakdemy_token');
     localStorage.removeItem('trakdemy_user');
+    setAuthToken(null);
     setUser(null);
     navigate('/login');
     toast.success('Logged out successfully');

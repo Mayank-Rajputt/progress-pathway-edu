@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,6 +26,9 @@ import Students from "./pages/Students";
 import StudentIssues from "./pages/StudentIssues";
 import SubmitIssue from "./pages/SubmitIssue";
 import TeacherAttendance from "./pages/TeacherAttendance";
+import About from "./pages/StaticPages/About";
+import PrivacyPolicy from "./pages/StaticPages/PrivacyPolicy";
+import TermsConditions from "./pages/StaticPages/TermsConditions";
 
 const queryClient = new QueryClient();
 
@@ -40,10 +44,24 @@ const App = () => (
             <Route path="/" element={<Welcome />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            
+            {/* Static Content Pages - Public */}
+            <Route path="/about" element={<About />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-conditions" element={<TermsConditions />} />
 
             {/* Protected Routes - Admin */}
             <Route path="/dashboard/admin" element={
               <ProtectedRoute allowedRoles={['admin']}>
+                <AppLayout>
+                  <AdminDashboard />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            
+            {/* Protected Routes - Department Admin */}
+            <Route path="/dashboard/department_admin" element={
+              <ProtectedRoute allowedRoles={['department_admin']}>
                 <AppLayout>
                   <AdminDashboard />
                 </AppLayout>
@@ -136,7 +154,7 @@ const App = () => (
             } />
             
             <Route path="/users" element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute allowedRoles={['admin', 'department_admin']}>
                 <AppLayout>
                   <Users />
                 </AppLayout>
@@ -144,7 +162,7 @@ const App = () => (
             } />
             
             <Route path="/students" element={
-              <ProtectedRoute allowedRoles={['teacher']}>
+              <ProtectedRoute allowedRoles={['teacher', 'admin', 'department_admin']}>
                 <AppLayout>
                   <Students />
                 </AppLayout>
@@ -152,7 +170,7 @@ const App = () => (
             } />
             
             <Route path="/student-issues" element={
-              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+              <ProtectedRoute allowedRoles={['teacher', 'admin', 'department_admin']}>
                 <AppLayout>
                   <StudentIssues />
                 </AppLayout>

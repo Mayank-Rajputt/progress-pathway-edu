@@ -4,6 +4,7 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/userRoutes';
 import studentRoutes from './routes/studentRoutes';
 import attendanceRoutes from './routes/attendanceRoutes';
 import marksRoutes from './routes/marksRoutes';
@@ -13,6 +14,7 @@ import uploadRoutes from './routes/uploadRoutes';
 import teacherAttendanceRoutes from './routes/teacherAttendanceRoutes';
 import studentIssueRoutes from './routes/studentIssueRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
+import { createInitialAdmin } from './controllers/authController';
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/marks', marksRoutes);
@@ -42,8 +45,12 @@ app.use(errorHandler);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/trakdemy')
-  .then(() => {
+  .then(async () => {
     console.log('Connected to MongoDB');
+    
+    // Create initial admin user if none exists
+    await createInitialAdmin();
+    
     // Start server
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

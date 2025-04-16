@@ -17,7 +17,9 @@ const registerSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
   email: z.string().email('Invalid email format'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['admin', 'teacher', 'student', 'parent']),
+  role: z.enum(['admin', 'department_admin', 'teacher', 'student', 'parent']),
+  department: z.string().optional(),
+  phoneNumber: z.string().optional(),
 });
 
 // Register user
@@ -32,6 +34,11 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
     throw new ApiError(400, 'User already exists');
   }
   
+  // If registering as admin, require an existing admin to be logged in
+  if (validatedData.role === 'admin' && (!req.user || req.user.role !== 'admin')) {
+    throw new ApiError(403, 'Only existing admins can create new admin accounts');
+  }
+  
   // Create user
   const user = await UserModel.create(validatedData);
   
@@ -44,6 +51,9 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
         name: user.name,
         email: user.email,
         role: user.role,
+        department: user.department,
+        phoneNumber: user.phoneNumber,
+        profileImage: user.profileImage,
         token: generateToken(user._id.toString())
       }
     });
@@ -75,6 +85,8 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        department: user.department,
+        phoneNumber: user.phoneNumber,
         profileImage: user.profileImage,
         token: generateToken(user._id.toString())
       }
@@ -104,6 +116,8 @@ const updateProfileSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters').optional(),
   email: z.string().email('Invalid email format').optional(),
   profileImage: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  department: z.string().optional(),
 });
 
 // Update user profile
@@ -117,10 +131,26 @@ export const updateUserProfile = asyncHandler(async (req: Request, res: Response
   if (user) {
     // Update user fields
     user.name = validatedData.name || user.name;
-    user.email = validatedData.email || user.email;
     
-    if (validatedData.profileImage) {
+    // Only allow email change if not already taken
+    if (validatedData.email && validatedData.email !== user.email) {
+      const emailExists = await UserModel.findOne({ email: validatedData.email });
+      if (emailExists) {
+        throw new ApiError(400, 'Email already in use');
+      }
+      user.email = validatedData.email;
+    }
+    
+    if (validatedData.profileImage !== undefined) {
       user.profileImage = validatedData.profileImage;
+    }
+    
+    if (validatedData.phoneNumber !== undefined) {
+      user.phoneNumber = validatedData.phoneNumber;
+    }
+    
+    if (validatedData.department !== undefined) {
+      user.department = validatedData.department;
     }
     
     // Save user
@@ -133,8 +163,9 @@ export const updateUserProfile = asyncHandler(async (req: Request, res: Response
         name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role,
+        department: updatedUser.department,
+        phoneNumber: updatedUser.phoneNumber,
         profileImage: updatedUser.profileImage,
-        token: generateToken(updatedUser._id.toString())
       }
     });
   } else {
@@ -174,3 +205,24 @@ export const updatePassword = asyncHandler(async (req: Request, res: Response) =
     message: 'Password updated successfully'
   });
 });
+
+// Create an admin user if none exists (used during initial setup)
+export const createInitialAdmin = async () => {
+  try {
+    const adminExists = await UserModel.findOne({ role: 'admin' });
+    
+    if (!adminExists) {
+      const admin = await UserModel.create({
+        name: 'Admin User',
+        email: 'admin@school.com',
+        password: 'admin123',
+        role: 'admin',
+        isMainAdmin: true
+      });
+      
+      console.log('Initial admin user created:', admin.email);
+    }
+  } catch (error) {
+    console.error('Error creating initial admin:', error);
+  }
+};

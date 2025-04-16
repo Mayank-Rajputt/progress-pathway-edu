@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { toast } from 'sonner';
+import axios from 'axios';
 
 interface TeacherAttendanceStats {
   total: number;
@@ -24,32 +25,37 @@ const TeacherAttendanceWidget: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const today = new Date();
   
-  const fetchAttendanceData = () => {
+  const fetchAttendanceData = async () => {
     setIsLoading(true);
     
-    // Simulate API call for teacher attendance data
-    setTimeout(() => {
-      // Mock data with random present teachers to simulate real-time updates
-      const total = 8;
-      const present = Math.floor(Math.random() * 3) + 5; // Random between 5-7 present
-      const absent = total - present;
-      const percentage = Math.round((present / total) * 100);
+    try {
+      // Get today's date in YYYY-MM-DD format
+      const dateString = format(today, 'yyyy-MM-dd');
       
-      setAttendanceData({
-        total,
-        present,
-        absent,
-        percentage
-      });
+      // Fetch attendance data from API
+      const response = await axios.get(`/api/teacher-attendance/summary?date=${dateString}`);
       
+      if (response.data.success) {
+        const data = response.data.data;
+        setAttendanceData({
+          total: data.total,
+          present: data.present,
+          absent: data.absent,
+          percentage: data.percentage
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching teacher attendance data:', error);
+      toast.error('Failed to load attendance data');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
   
   useEffect(() => {
     fetchAttendanceData();
     
-    // Set up interval to refresh data every 60 seconds for demo purposes
+    // Set up interval to refresh data every 60 seconds
     const interval = setInterval(() => {
       fetchAttendanceData();
     }, 60000);
