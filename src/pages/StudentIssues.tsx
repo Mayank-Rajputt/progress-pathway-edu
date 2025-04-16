@@ -1,572 +1,746 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  FileQuestion, 
-  Plus, 
-  Search, 
-  Filter, 
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  AlertTriangle
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { AlertCircle, CheckCircle, Clock, Edit, MessageSquare, Search, Trash, User } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-// Mock data
-const mockIssues = [
-  { 
-    id: '1', 
-    title: 'Cannot access homework assignment', 
-    category: 'academic',
-    status: 'pending', 
-    createdAt: '2023-05-10T14:30:00Z', 
-    studentName: 'Michael Johnson',
-    description: 'I cannot access the homework assignment for Mathematics that was assigned yesterday.',
-    assignedTo: 'Sarah Williams'
-  },
-  { 
-    id: '2', 
-    title: 'Computer lab system not working', 
-    category: 'technical',
-    status: 'in_progress', 
-    createdAt: '2023-05-09T10:15:00Z', 
-    studentName: 'Emily Davis',
-    description: 'The system in Computer Lab 3, Station 12 is not booting up properly.',
-    assignedTo: 'John Smith'
-  },
-  { 
-    id: '3', 
-    title: 'Request for extra study material', 
-    category: 'academic',
-    status: 'resolved', 
-    createdAt: '2023-05-08T09:45:00Z', 
-    studentName: 'Alex Thompson',
-    description: 'I would like to request additional study material for the upcoming Physics exam.',
-    assignedTo: 'Robert Wilson'
-  },
-  { 
-    id: '4', 
-    title: 'Classroom projector not working', 
-    category: 'facilities',
-    status: 'pending', 
-    createdAt: '2023-05-08T13:20:00Z', 
-    studentName: 'Olivia Martinez',
-    description: 'The projector in Room 204 is not displaying properly. The image is very dim.',
-    assignedTo: null
-  },
-  { 
-    id: '5', 
-    title: 'Special permission for leave', 
-    category: 'other',
-    status: 'rejected', 
-    createdAt: '2023-05-07T11:10:00Z', 
-    studentName: 'James Wilson',
-    description: 'I need to take 3 days leave next week for a family function.',
-    assignedTo: 'Sarah Williams'
+// Type definitions
+interface User {
+  _id: string;
+  name: string;
+  role: string;
+}
+
+interface Comment {
+  _id: string;
+  text: string;
+  user: User;
+  timestamp: string;
+}
+
+interface StudentIssue {
+  _id: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high';
+  category: 'academic' | 'administrative' | 'technical' | 'other';
+  submittedBy: User;
+  assignedTo?: User;
+  comments: Comment[];
+  resolution?: string;
+  attachmentUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ServerResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
+interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+// API calls
+const fetchIssues = async (status: string = ''): Promise<PaginatedResponse<StudentIssue>> => {
+  const response = await fetch(`/api/student-issues?${status ? `status=${status}` : ''}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch issues');
   }
-];
-
-// Status badge component
-const StatusBadge = ({ status }) => {
-  const statusConfig = {
-    pending: { 
-      class: 'bg-yellow-100 text-yellow-800', 
-      icon: <Clock className="h-3 w-3 mr-1" /> 
-    },
-    in_progress: { 
-      class: 'bg-blue-100 text-blue-800', 
-      icon: <RefreshCw className="h-3 w-3 mr-1" /> 
-    },
-    resolved: { 
-      class: 'bg-green-100 text-green-800', 
-      icon: <CheckCircle2 className="h-3 w-3 mr-1" /> 
-    },
-    rejected: { 
-      class: 'bg-red-100 text-red-800', 
-      icon: <XCircle className="h-3 w-3 mr-1" /> 
-    }
-  };
-
-  const config = statusConfig[status] || statusConfig.pending;
-  
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.class}`}>
-      {config.icon}
-      {status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-    </span>
-  );
+  return response.json();
 };
 
-// Category badge component
-const CategoryBadge = ({ category }) => {
-  const categoryConfig = {
-    academic: { class: 'bg-purple-100 text-purple-800' },
-    technical: { class: 'bg-blue-100 text-blue-800' },
-    facilities: { class: 'bg-green-100 text-green-800' },
-    other: { class: 'bg-gray-100 text-gray-800' }
-  };
-
-  const config = categoryConfig[category] || categoryConfig.other;
-  
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.class}`}>
-      {category.charAt(0).toUpperCase() + category.slice(1)}
-    </span>
-  );
+const fetchIssueById = async (id: string): Promise<ServerResponse<StudentIssue>> => {
+  const response = await fetch(`/api/student-issues/${id}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch issue details');
+  }
+  return response.json();
 };
 
-const StudentIssues = () => {
+const updateIssue = async ({ id, data }: { id: string; data: any }): Promise<ServerResponse<StudentIssue>> => {
+  const response = await fetch(`/api/student-issues/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update issue');
+  }
+  return response.json();
+};
+
+const deleteIssue = async (id: string): Promise<ServerResponse<null>> => {
+  const response = await fetch(`/api/student-issues/${id}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to delete issue');
+  }
+  return response.json();
+};
+
+const createIssue = async (data: any): Promise<ServerResponse<StudentIssue>> => {
+  const response = await fetch('/api/student-issues', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create issue');
+  }
+  return response.json();
+};
+
+// Helper functions
+const getPriorityColor = (priority: string): string => {
+  switch (priority) {
+    case 'high':
+      return 'bg-red-100 text-red-800';
+    case 'medium':
+      return 'bg-orange-100 text-orange-800';
+    case 'low':
+      return 'bg-green-100 text-green-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case 'pending':
+      return <Clock className="h-4 w-4 text-yellow-500" />;
+    case 'in_progress':
+      return <AlertCircle className="h-4 w-4 text-blue-500" />;
+    case 'resolved':
+      return <CheckCircle className="h-4 w-4 text-green-500" />;
+    case 'closed':
+      return <CheckCircle className="h-4 w-4 text-gray-500" />;
+    default:
+      return <Clock className="h-4 w-4 text-gray-500" />;
+  }
+};
+
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const StudentIssues: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('view-issues');
-  const [issues, setIssues] = useState(mockIssues);
-  const [filteredIssues, setFilteredIssues] = useState(mockIssues);
-  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [selectedIssue, setSelectedIssue] = useState(null);
+  const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   
-  // Form state for creating new issue
+  // Form states
   const [newIssue, setNewIssue] = useState({
     title: '',
+    description: '',
+    priority: 'medium',
     category: 'academic',
-    description: ''
   });
   
-  // Form state for updating issue
-  const [updateFormData, setUpdateFormData] = useState({
+  const [updateForm, setUpdateForm] = useState({
     status: '',
+    priority: '',
+    comment: '',
     resolution: '',
-    assignedTo: ''
   });
   
-  // Apply filters to issues
-  useEffect(() => {
-    let filtered = [...issues];
-    
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(
-        issue => 
-          issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          issue.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          issue.studentName.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(issue => issue.status === statusFilter);
-    }
-    
-    // Apply category filter
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(issue => issue.category === categoryFilter);
-    }
-    
-    setFilteredIssues(filtered);
-  }, [searchTerm, statusFilter, categoryFilter, issues]);
+  // Queries
+  const { data: issuesData, isLoading } = useQuery({
+    queryKey: ['studentIssues', activeTab],
+    queryFn: () => fetchIssues(activeTab !== 'all' ? activeTab : ''),
+  });
   
-  // Handle creating a new issue
-  const handleCreateIssue = (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      const newIssueData = {
-        id: (issues.length + 1).toString(),
-        ...newIssue,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        studentName: user?.name || 'Current Student',
-        assignedTo: null
-      };
-      
-      setIssues([newIssueData, ...issues]);
-      
-      // Reset form
+  const { data: issueDetails, isLoading: isLoadingDetails } = useQuery({
+    queryKey: ['issueDetails', selectedIssue],
+    queryFn: () => fetchIssueById(selectedIssue || ''),
+    enabled: !!selectedIssue,
+  });
+  
+  // Mutations
+  const createIssueMutation = useMutation({
+    mutationFn: createIssue,
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Issue created successfully',
+      });
+      setIsCreateDialogOpen(false);
       setNewIssue({
         title: '',
+        description: '',
+        priority: 'medium',
         category: 'academic',
-        description: ''
       });
-      
-      // Switch to view tab
-      setActiveTab('view-issues');
-      
-      setIsLoading(false);
-      toast.success('Issue submitted successfully');
-    }, 1000);
-  };
+      queryClient.invalidateQueries({ queryKey: ['studentIssues'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create issue',
+        variant: 'destructive',
+      });
+    },
+  });
   
-  // Handle selecting an issue for view/update
-  const handleSelectIssue = (issue) => {
-    setSelectedIssue(issue);
-    
-    // Initialize update form
-    setUpdateFormData({
-      status: issue.status,
-      resolution: '',
-      assignedTo: issue.assignedTo || ''
-    });
-  };
+  const updateIssueMutation = useMutation({
+    mutationFn: updateIssue,
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Issue updated successfully',
+      });
+      setIsUpdateDialogOpen(false);
+      setUpdateForm({
+        status: '',
+        priority: '',
+        comment: '',
+        resolution: '',
+      });
+      queryClient.invalidateQueries({ queryKey: ['studentIssues'] });
+      queryClient.invalidateQueries({ queryKey: ['issueDetails', selectedIssue] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update issue',
+        variant: 'destructive',
+      });
+    },
+  });
   
-  // Handle updating an issue
-  const handleUpdateIssue = (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      const updatedIssues = issues.map(issue => 
-        issue.id === selectedIssue.id
-          ? { ...issue, ...updateFormData }
-          : issue
-      );
-      
-      setIssues(updatedIssues);
+  const deleteIssueMutation = useMutation({
+    mutationFn: deleteIssue,
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Issue deleted successfully',
+      });
       setSelectedIssue(null);
-      setIsLoading(false);
-      toast.success('Issue updated successfully');
-    }, 1000);
+      queryClient.invalidateQueries({ queryKey: ['studentIssues'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete issue',
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Event handlers
+  const handleCreateIssue = (e: React.FormEvent) => {
+    e.preventDefault();
+    createIssueMutation.mutate(newIssue);
   };
   
-  // Refresh issues
-  const handleRefresh = () => {
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIssues(mockIssues);
-      setIsLoading(false);
-      toast.success('Issues refreshed');
-    }, 800);
+  const handleUpdateIssue = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedIssue) {
+      const formData = Object.fromEntries(
+        Object.entries(updateForm).filter(([_, value]) => value !== '')
+      );
+      updateIssueMutation.mutate({ id: selectedIssue, data: formData });
+    }
   };
+  
+  const handleDeleteIssue = () => {
+    if (selectedIssue) {
+      deleteIssueMutation.mutate(selectedIssue);
+    }
+  };
+  
+  // Filter issues based on search term
+  const filteredIssues = issuesData?.data.filter((issue) =>
+    issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    issue.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    issue.submittedBy.name.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
   
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="container mx-auto py-6 space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Student Issues</h1>
-          <p className="text-muted-foreground">
-            {user?.role === 'student' 
-              ? 'Submit and track your issues'
-              : 'Manage and respond to student issues'}
-          </p>
+          <p className="text-muted-foreground">Manage and respond to student inquiries and problems</p>
         </div>
         
         {user?.role === 'student' && (
-          <Button 
-            onClick={() => setActiveTab('create-issue')}
-            className="flex items-center gap-2"
-          >
-            <Plus size={16} />
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
             Submit New Issue
           </Button>
         )}
       </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="view-issues">
-            {user?.role === 'student' ? 'My Issues' : 'Manage Issues'}
-          </TabsTrigger>
-          {user?.role === 'student' && (
-            <TabsTrigger value="create-issue">Submit New Issue</TabsTrigger>
-          )}
-          {/* Fix: Change comparison from !== to !== 'student' to compare strings properly */}
-          {user?.role !== 'student' && (
-            <TabsTrigger value="issue-stats">Issue Statistics</TabsTrigger>
-          )}
-        </TabsList>
-        
-        {/* View Issues Tab */}
-        <TabsContent value="view-issues" className="space-y-4">
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-1 space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <FileQuestion className="h-5 w-5" />
-                  {user?.role === 'student' ? 'My Issues' : 'Student Issues'}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  disabled={isLoading}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                  Refresh
-                </Button>
-              </CardTitle>
+              <CardTitle>Filters</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search issues..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid grid-cols-4 w-full">
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="pending">Pending</TabsTrigger>
+                  <TabsTrigger value="in_progress">Active</TabsTrigger>
+                  <TabsTrigger value="resolved">Resolved</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Issues</CardTitle>
+              <CardDescription>
+                {isLoading ? 'Loading...' : `${filteredIssues.length} issues found`}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {/* Filters */}
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="search"
-                      placeholder="Search issues..."
-                      className="pl-8"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="resolved">Resolved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        <SelectItem value="academic">Academic</SelectItem>
-                        <SelectItem value="technical">Technical</SelectItem>
-                        <SelectItem value="facilities">Facilities</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                {/* Issues Table */}
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        {user?.role !== 'student' && <TableHead>Student</TableHead>}
-                        <TableHead>Category</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredIssues.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={user?.role === 'student' ? 5 : 6} className="text-center py-6">
-                            No issues found
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredIssues.map((issue) => (
-                          <TableRow key={issue.id}>
-                            <TableCell className="font-medium">{issue.title}</TableCell>
-                            {user?.role !== 'student' && (
-                              <TableCell>{issue.studentName}</TableCell>
-                            )}
-                            <TableCell>
-                              <CategoryBadge category={issue.category} />
-                            </TableCell>
-                            <TableCell>
-                              <StatusBadge status={issue.status} />
-                            </TableCell>
-                            <TableCell>
-                              {new Date(issue.createdAt).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleSelectIssue(issue)}
-                              >
-                                {user?.role === 'student' ? 'View' : 'Manage'}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-                
-                {/* Issue Detail/Update Modal (simplified version) */}
-                {selectedIssue && (
-                  <Card className="mt-8 border-t-4 border-t-blue-500">
-                    <CardHeader>
-                      <CardTitle className="flex justify-between items-start">
+              <div className="space-y-2">
+                {isLoading ? (
+                  <p>Loading issues...</p>
+                ) : filteredIssues.length === 0 ? (
+                  <p>No issues found.</p>
+                ) : (
+                  filteredIssues.map((issue) => (
+                    <div
+                      key={issue._id}
+                      className={`p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors ${
+                        selectedIssue === issue._id ? 'border-primary bg-accent' : 'border-border'
+                      }`}
+                      onClick={() => setSelectedIssue(issue._id)}
+                    >
+                      <div className="flex items-start justify-between">
                         <div>
-                          <div className="text-xl">{selectedIssue.title}</div>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            Submitted by {selectedIssue.studentName} on {new Date(selectedIssue.createdAt).toLocaleDateString()}
-                          </div>
+                          <h3 className="font-medium line-clamp-1">{issue.title}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-1">
+                            {issue.description}
+                          </p>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedIssue(null)}
-                        >
-                          Close
-                        </Button>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <div className="flex gap-2 mb-2">
-                          <CategoryBadge category={selectedIssue.category} />
-                          <StatusBadge status={selectedIssue.status} />
-                        </div>
-                        <div className="bg-muted p-4 rounded-lg">
-                          {selectedIssue.description}
-                        </div>
+                        {getStatusIcon(issue.status)}
                       </div>
-                      
-                      {/* Update Form (for admin, department_admin, and teacher) */}
-                      {['admin', 'department_admin', 'teacher'].includes(user?.role) && (
-                        <form onSubmit={handleUpdateIssue} className="space-y-4 mt-6 border-t pt-4">
-                          <div>
-                            <label className="block text-sm font-medium mb-1">Update Status</label>
-                            <Select 
-                              value={updateFormData.status}
-                              onValueChange={(value) => setUpdateFormData({...updateFormData, status: value})}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="in_progress">In Progress</SelectItem>
-                                <SelectItem value="resolved">Resolved</SelectItem>
-                                <SelectItem value="rejected">Rejected</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium mb-1">Resolution / Comments</label>
-                            <Textarea
-                              value={updateFormData.resolution}
-                              onChange={(e) => setUpdateFormData({...updateFormData, resolution: e.target.value})}
-                              placeholder="Add resolution details or comments"
-                              rows={3}
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium mb-1">Assign To</label>
-                            <Input 
-                              value={updateFormData.assignedTo}
-                              onChange={(e) => setUpdateFormData({...updateFormData, assignedTo: e.target.value})}
-                              placeholder="Enter name of assignee"
-                            />
-                          </div>
-                          
-                          <Button type="submit" disabled={isLoading}>
-                            {isLoading ? 'Updating...' : 'Update Issue'}
-                          </Button>
-                        </form>
-                      )}
-                    </CardContent>
-                  </Card>
+                      <div className="flex items-center justify-between mt-2 text-xs">
+                        <div className="flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          <span>{issue.submittedBy.name}</span>
+                        </div>
+                        <Badge variant="outline" className={getPriorityColor(issue.priority)}>
+                          {issue.priority}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
         
-        {/* Create Issue Tab (students only) */}
-        {user?.role === 'student' && (
-          <TabsContent value="create-issue" className="space-y-4">
+        <div className="md:col-span-2">
+          {selectedIssue ? (
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  Submit New Issue
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCreateIssue} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Issue Title</label>
-                    <Input
-                      value={newIssue.title}
-                      onChange={(e) => setNewIssue({...newIssue, title: e.target.value})}
-                      placeholder="Brief title of your issue"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Category</label>
-                    <Select 
-                      value={newIssue.category}
-                      onValueChange={(value) => setNewIssue({...newIssue, category: value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="academic">Academic</SelectItem>
-                        <SelectItem value="technical">Technical</SelectItem>
-                        <SelectItem value="facilities">Facilities</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Description</label>
-                    <Textarea
-                      value={newIssue.description}
-                      onChange={(e) => setNewIssue({...newIssue, description: e.target.value})}
-                      placeholder="Detailed description of your issue"
-                      rows={5}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="flex justify-end gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => {
-                        setNewIssue({
-                          title: '',
-                          category: 'academic',
-                          description: ''
-                        });
-                        setActiveTab('view-issues');
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={isLoading}>
-                      {isLoading ? 'Submitting...' : 'Submit Issue'}
-                    </Button>
-                  </div>
-                </form>
+              {isLoadingDetails ? (
+                <CardContent className="py-6">Loading issue details...</CardContent>
+              ) : issueDetails?.data ? (
+                <>
+                  <CardHeader className="flex flex-row items-start justify-between">
+                    <div>
+                      <CardTitle>{issueDetails.data.title}</CardTitle>
+                      <CardDescription>
+                        Submitted by {issueDetails.data.submittedBy.name} on{' '}
+                        {formatDate(issueDetails.data.createdAt)}
+                      </CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                      {(user?.role === 'admin' || user?.role === 'teacher') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setUpdateForm({
+                              status: issueDetails.data.status,
+                              priority: issueDetails.data.priority,
+                              comment: '',
+                              resolution: issueDetails.data.resolution || '',
+                            });
+                            setIsUpdateDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-1" /> Update
+                        </Button>
+                      )}
+                      
+                      {(user?.role === 'admin' ||
+                        // Fix: Compare string with boolean, change to string comparison
+                        (user?.role === 'student' && 
+                         user?._id === issueDetails.data.submittedBy._id)) && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm">
+                              <Trash className="h-4 w-4 mr-1" /> Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this issue? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDeleteIssue}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <Badge className={`${getPriorityColor(issueDetails.data.priority)}`}>
+                          {issueDetails.data.priority.charAt(0).toUpperCase() + issueDetails.data.priority.slice(1)} Priority
+                        </Badge>
+                        <Badge variant="outline">
+                          {issueDetails.data.category.charAt(0).toUpperCase() + issueDetails.data.category.slice(1)}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={
+                            issueDetails.data.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                              : issueDetails.data.status === 'in_progress'
+                              ? 'bg-blue-100 text-blue-800 border-blue-200'
+                              : issueDetails.data.status === 'resolved'
+                              ? 'bg-green-100 text-green-800 border-green-200'
+                              : 'bg-gray-100 text-gray-800 border-gray-200'
+                          }
+                        >
+                          {issueDetails.data.status === 'in_progress'
+                            ? 'In Progress'
+                            : issueDetails.data.status.charAt(0).toUpperCase() + issueDetails.data.status.slice(1)}
+                        </Badge>
+                      </div>
+                      
+                      <div className="p-4 bg-muted rounded-lg">
+                        <p className="whitespace-pre-line">{issueDetails.data.description}</p>
+                      </div>
+                      
+                      {issueDetails.data.attachmentUrl && (
+                        <div className="mt-4">
+                          <h4 className="font-medium mb-2">Attachment</h4>
+                          <a
+                            href={issueDetails.data.attachmentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            View Attachment
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {issueDetails.data.assignedTo && (
+                      <div>
+                        <h4 className="font-medium mb-2">Assigned To</h4>
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <User className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p>{issueDetails.data.assignedTo.name}</p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {issueDetails.data.assignedTo.role}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {issueDetails.data.resolution && (
+                      <div>
+                        <h4 className="font-medium mb-2">Resolution</h4>
+                        <div className="p-4 bg-muted rounded-lg">
+                          <p className="whitespace-pre-line">{issueDetails.data.resolution}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {issueDetails.data.comments.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2">Comments</h4>
+                        <div className="space-y-4">
+                          {issueDetails.data.comments.map((comment) => (
+                            <div key={comment._id} className="border rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <User className="h-3 w-3" />
+                                </div>
+                                <span className="font-medium">{comment.user.name}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDate(comment.timestamp)}
+                                </span>
+                              </div>
+                              <p className="text-sm">{comment.text}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {(user?.role === 'teacher' || user?.role === 'admin' || user?._id === issueDetails.data.submittedBy._id) && (
+                      <div>
+                        <h4 className="font-medium mb-2">Add Comment</h4>
+                        <div className="flex gap-2">
+                          <Textarea
+                            placeholder="Type your comment here..."
+                            value={updateForm.comment}
+                            onChange={(e) => setUpdateForm({ ...updateForm, comment: e.target.value })}
+                          />
+                          <Button
+                            onClick={() => {
+                              if (updateForm.comment.trim()) {
+                                updateIssueMutation.mutate({
+                                  id: selectedIssue,
+                                  data: { comment: updateForm.comment },
+                                });
+                                setUpdateForm({ ...updateForm, comment: '' });
+                              }
+                            }}
+                            disabled={!updateForm.comment.trim()}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-1" /> Send
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </>
+              ) : (
+                <CardContent className="py-6">Issue not found</CardContent>
+              )}
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="py-12 flex flex-col items-center justify-center text-center">
+                <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium">No Issue Selected</h3>
+                <p className="text-muted-foreground">
+                  Select an issue from the list to view its details
+                </p>
               </CardContent>
             </Card>
-          </TabsContent>
-        )}
-      </Tabs>
+          )}
+        </div>
+      </div>
+      
+      {/* Create Issue Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Submit New Issue</DialogTitle>
+            <DialogDescription>
+              Describe your issue in detail so teachers or admin can help you.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateIssue}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  placeholder="Brief title of your issue"
+                  value={newIssue.title}
+                  onChange={(e) => setNewIssue({ ...newIssue, title: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Detailed description of your issue"
+                  value={newIssue.description}
+                  onChange={(e) => setNewIssue({ ...newIssue, description: e.target.value })}
+                  required
+                  rows={5}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Select
+                    value={newIssue.category}
+                    onValueChange={(value) => setNewIssue({ ...newIssue, category: value })}
+                  >
+                    <SelectTrigger id="category">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="academic">Academic</SelectItem>
+                      <SelectItem value="administrative">Administrative</SelectItem>
+                      <SelectItem value="technical">Technical</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="priority">Priority</Label>
+                  <Select
+                    value={newIssue.priority}
+                    onValueChange={(value) => setNewIssue({ ...newIssue, priority: value })}
+                  >
+                    <SelectTrigger id="priority">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCreateDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createIssueMutation.isPending}>
+                {createIssueMutation.isPending ? 'Submitting...' : 'Submit Issue'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Update Issue Dialog */}
+      <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Issue</DialogTitle>
+            <DialogDescription>
+              Update the status, priority or add a resolution to this issue.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateIssue}>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="update-status">Status</Label>
+                  <Select
+                    value={updateForm.status}
+                    onValueChange={(value) => setUpdateForm({ ...updateForm, status: value })}
+                  >
+                    <SelectTrigger id="update-status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="resolved">Resolved</SelectItem>
+                      <SelectItem value="closed">Closed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="update-priority">Priority</Label>
+                  <Select
+                    value={updateForm.priority}
+                    onValueChange={(value) => setUpdateForm({ ...updateForm, priority: value })}
+                  >
+                    <SelectTrigger id="update-priority">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="update-resolution">Resolution</Label>
+                <Textarea
+                  id="update-resolution"
+                  placeholder="Add a resolution to this issue"
+                  value={updateForm.resolution}
+                  onChange={(e) => setUpdateForm({ ...updateForm, resolution: e.target.value })}
+                  rows={4}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsUpdateDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateIssueMutation.isPending}>
+                {updateIssueMutation.isPending ? 'Updating...' : 'Update Issue'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
