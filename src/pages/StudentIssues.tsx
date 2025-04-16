@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 // Type definitions
 interface User {
   _id: string;
+  id?: string;
   name: string;
   role: string;
 }

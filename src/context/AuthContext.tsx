@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -7,6 +6,7 @@ export type UserRole = 'admin' | 'teacher' | 'student' | 'parent';
 
 export interface User {
   id: string;
+  _id?: string; // Add _id as optional for compatibility with backend models
   name: string;
   email: string;
   role: UserRole;
@@ -108,11 +108,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Create mock token (in a real app this would be a JWT)
       const token = `mock-jwt-token-${foundUser.id}-${Date.now()}`;
       
+      // Add _id property to match backend models' expectations
+      const userWithId = { ...foundUser, _id: foundUser.id };
+      
       // Save to localStorage
       localStorage.setItem('trakdemy_token', token);
-      localStorage.setItem('trakdemy_user', JSON.stringify(foundUser));
+      localStorage.setItem('trakdemy_user', JSON.stringify(userWithId));
       
-      setUser(foundUser);
+      setUser(userWithId);
       
       // Redirect based on role
       navigate(`/dashboard/${foundUser.role}`);
