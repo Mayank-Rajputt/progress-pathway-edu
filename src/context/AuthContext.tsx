@@ -1,8 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-export type UserRole = 'admin' | 'teacher' | 'student' | 'parent';
+export type UserRole = 'admin' | 'department_admin' | 'teacher' | 'student' | 'parent';
 
 export interface User {
   id: string;
@@ -11,6 +12,8 @@ export interface User {
   email: string;
   role: UserRole;
   profileImage?: string;
+  department?: string;
+  phoneNumber?: string;
 }
 
 interface AuthContextType {
@@ -22,6 +25,7 @@ interface AuthContextType {
   signup: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
   getToken: () => string | null;
   updateProfileImage: (imageUrl: string | null) => void;
+  updateUserDetails: (details: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,7 +44,8 @@ const MOCK_USERS: User[] = [
     name: 'Teacher Smith',
     email: 'teacher@trakdemy.com',
     role: 'teacher',
-    profileImage: 'https://ui-avatars.com/api/?background=8B5CF6&color=fff&name=Teacher+Smith'
+    profileImage: 'https://ui-avatars.com/api/?background=8B5CF6&color=fff&name=Teacher+Smith',
+    department: 'Science'
   },
   {
     id: '3',
@@ -55,6 +60,14 @@ const MOCK_USERS: User[] = [
     email: 'parent@trakdemy.com',
     role: 'parent',
     profileImage: 'https://ui-avatars.com/api/?background=F59E0B&color=fff&name=Parent+Davis'
+  },
+  {
+    id: '5',
+    name: 'Department Admin',
+    email: 'department@trakdemy.com',
+    role: 'department_admin',
+    department: 'Mathematics',
+    profileImage: 'https://ui-avatars.com/api/?background=EC4899&color=fff&name=Department+Admin'
   }
 ];
 
@@ -63,7 +76,8 @@ const MOCK_PASSWORDS: Record<string, string> = {
   'admin@trakdemy.com': 'admin123',
   'teacher@trakdemy.com': 'teacher123',
   'student@trakdemy.com': 'student123',
-  'parent@trakdemy.com': 'parent123'
+  'parent@trakdemy.com': 'parent123',
+  'department@trakdemy.com': 'department123'
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -88,6 +102,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updatedUser = { ...user, profileImage: imageUrl };
       setUser(updatedUser);
       localStorage.setItem('trakdemy_user', JSON.stringify(updatedUser));
+    }
+  };
+
+  const updateUserDetails = (details: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...details };
+      setUser(updatedUser);
+      localStorage.setItem('trakdemy_user', JSON.stringify(updatedUser));
+      
+      // Update the MOCK_USERS array for this session
+      const userIndex = MOCK_USERS.findIndex(u => u.id === user.id);
+      if (userIndex !== -1) {
+        MOCK_USERS[userIndex] = { ...MOCK_USERS[userIndex], ...details };
+      }
+      
+      toast.success('User details updated successfully');
     }
   };
 
@@ -155,15 +185,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Create mock token (in a real app this would be a JWT)
       const token = `mock-jwt-token-${newUser.id}-${Date.now()}`;
       
+      // Add _id property to match backend models
+      const userWithId = { ...newUser, _id: newUser.id };
+      
       // Save to localStorage
       localStorage.setItem('trakdemy_token', token);
-      localStorage.setItem('trakdemy_user', JSON.stringify(newUser));
+      localStorage.setItem('trakdemy_user', JSON.stringify(userWithId));
       
       // Update mock users array for this session
       MOCK_USERS.push(newUser);
       MOCK_PASSWORDS[email] = password;
       
-      setUser(newUser);
+      setUser(userWithId);
       
       navigate(`/dashboard/${newUser.role}`);
       toast.success('Account created successfully!');
@@ -193,7 +226,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     signup,
     getToken,
-    updateProfileImage
+    updateProfileImage,
+    updateUserDetails
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

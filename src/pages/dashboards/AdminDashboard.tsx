@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   Users,
   GraduationCap,
@@ -17,15 +18,48 @@ import TeacherAttendanceWidget from '@/components/widgets/TeacherAttendanceWidge
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
+  const [statsData, setStatsData] = useState({
+    totalUsers: '1,234',
+    students: '987',
+    teachers: '64',
+    averageAttendance: '92%',
+    classes: '38',
+    reportsGenerated: '342'
+  });
+  
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data for dashboard stats
+  // Simulate fetching dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      // Simulate API request
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // In a real app, this would fetch data from the backend
+      setStatsData({
+        totalUsers: '1,234',
+        students: '987',
+        teachers: '64',
+        averageAttendance: '92%',
+        classes: '38',
+        reportsGenerated: '342'
+      });
+      
+      setIsLoading(false);
+    };
+    
+    fetchDashboardData();
+  }, []);
+
+  // Stats cards config
   const stats = [
-    { title: 'Total Users', value: '1,234', icon: <Users size={24} className="text-admin" /> },
-    { title: 'Students', value: '987', icon: <GraduationCap size={24} className="text-student" /> },
-    { title: 'Teachers', value: '64', icon: <Users size={24} className="text-teacher" /> },
-    { title: 'Average Attendance', value: '92%', icon: <CalendarDays size={24} className="text-admin" /> },
-    { title: 'Classes', value: '38', icon: <Clock size={24} className="text-admin" /> },
-    { title: 'Reports Generated', value: '342', icon: <BookOpen size={24} className="text-admin" /> },
+    { title: 'Total Users', value: statsData.totalUsers, icon: <Users size={24} className="text-admin" /> },
+    { title: 'Students', value: statsData.students, icon: <GraduationCap size={24} className="text-student" /> },
+    { title: 'Teachers', value: statsData.teachers, icon: <Users size={24} className="text-teacher" /> },
+    { title: 'Average Attendance', value: statsData.averageAttendance, icon: <CalendarDays size={24} className="text-admin" /> },
+    { title: 'Classes', value: statsData.classes, icon: <Clock size={24} className="text-admin" /> },
+    { title: 'Reports Generated', value: statsData.reportsGenerated, icon: <BookOpen size={24} className="text-admin" /> },
   ];
 
   return (
@@ -65,7 +99,7 @@ const AdminDashboard: React.FC = () => {
                 to="/teacher-attendance" 
                 className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
               >
-                View All
+                <Button variant="outline" size="sm">View All</Button>
               </Link>
             </div>
           </CardHeader>

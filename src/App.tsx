@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,6 +24,7 @@ import Users from "./pages/Users";
 import Students from "./pages/Students";
 import StudentIssues from "./pages/StudentIssues";
 import SubmitIssue from "./pages/SubmitIssue";
+import TeacherAttendance from "./pages/TeacherAttendance";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +73,15 @@ const App = () => (
               <ProtectedRoute allowedRoles={['parent']}>
                 <AppLayout>
                   <ParentDashboard />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+
+            {/* Teacher Attendance Route */}
+            <Route path="/teacher-attendance" element={
+              <ProtectedRoute allowedRoles={['admin', 'department_admin']}>
+                <AppLayout>
+                  <TeacherAttendance />
                 </AppLayout>
               </ProtectedRoute>
             } />

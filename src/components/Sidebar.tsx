@@ -34,6 +34,14 @@ const navItems: Record<UserRole, { name: string; path: string; icon: React.React
     { name: 'Timetable', path: '/timetable', icon: <Clock size={20} /> },
     { name: 'Profile', path: '/profile', icon: <UserCog size={20} /> },
   ],
+  department_admin: [
+    { name: 'Dashboard', path: '/dashboard/admin', icon: <LayoutDashboard size={20} /> },
+    { name: 'Teacher Attendance', path: '/teacher-attendance', icon: <CheckSquare size={20} /> },
+    { name: 'Student Attendance', path: '/attendance', icon: <CalendarDays size={20} /> },
+    { name: 'Student Issues', path: '/student-issues', icon: <MessageSquare size={20} /> },
+    { name: 'Announcements', path: '/announcements', icon: <Bell size={20} /> },
+    { name: 'Profile', path: '/profile', icon: <UserCog size={20} /> },
+  ],
   teacher: [
     { name: 'Dashboard', path: '/dashboard/teacher', icon: <LayoutDashboard size={20} /> },
     { name: 'Students', path: '/students', icon: <Users size={20} /> },
@@ -119,7 +127,9 @@ const Sidebar: React.FC = () => {
                 <p className="text-sm font-medium text-sidebar-foreground">{user.name}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   <span className={`inline-block px-2 py-0.5 rounded-full text-xs text-white role-badge-${user.role}`}>
-                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                    {user.role === 'department_admin' 
+                      ? 'Dept Admin'
+                      : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                   </span>
                 </p>
               </div>
