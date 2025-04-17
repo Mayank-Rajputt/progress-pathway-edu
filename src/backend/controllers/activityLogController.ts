@@ -25,7 +25,7 @@ export const getActivityLogs = asyncHandler(async (req: Request, res: Response) 
   if (module) query.module = module;
   if (status) query.status = status;
   
-  // Date range
+  //   Date range
   if (startDate || endDate) {
     query.createdAt = {};
     if (startDate) query.createdAt.$gte = new Date(startDate as string);
