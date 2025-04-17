@@ -29,6 +29,12 @@ import TeacherAttendance from "./pages/TeacherAttendance";
 import About from "./pages/StaticPages/About";
 import PrivacyPolicy from "./pages/StaticPages/PrivacyPolicy";
 import TermsConditions from "./pages/StaticPages/TermsConditions";
+import Blog from "./pages/StaticPages/Blog";
+import Careers from "./pages/StaticPages/Careers";
+import ReportAbuse from "./pages/StaticPages/ReportAbuse";
+import Support from "./pages/StaticPages/Support";
+import FAQ from "./pages/StaticPages/FAQ";
+import Footer from "./components/Footer";
 
 const queryClient = new QueryClient();
 
@@ -46,9 +52,14 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             
             {/* Static Content Pages - Public */}
-            <Route path="/about" element={<About />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/terms-conditions" element={<TermsConditions />} />
+            <Route path="/about" element={<><About /><Footer /></>} />
+            <Route path="/privacy-policy" element={<><PrivacyPolicy /><Footer /></>} />
+            <Route path="/terms-conditions" element={<><TermsConditions /><Footer /></>} />
+            <Route path="/blog" element={<><Blog /><Footer /></>} />
+            <Route path="/careers" element={<><Careers /><Footer /></>} />
+            <Route path="/report-abuse" element={<><ReportAbuse /><Footer /></>} />
+            <Route path="/support" element={<><Support /><Footer /></>} />
+            <Route path="/faq" element={<><FAQ /><Footer /></>} />
 
             {/* Protected Routes - Admin */}
             <Route path="/dashboard/admin" element={
