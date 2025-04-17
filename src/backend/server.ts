@@ -13,6 +13,7 @@ import dashboardRoutes from './routes/dashboardRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import teacherAttendanceRoutes from './routes/teacherAttendanceRoutes';
 import studentIssueRoutes from './routes/studentIssueRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
 import { createInitialAdmin } from './controllers/authController';
 
@@ -39,6 +40,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/teacher-attendance', teacherAttendanceRoutes);
 app.use('/api/student-issues', studentIssueRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

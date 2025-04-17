@@ -11,6 +11,7 @@ export interface UserData {
   joinDate: string;
   department?: string;
   phoneNumber?: string;
+  collegeId?: string; // Added for multi-tenant support
 }
 
 export interface EditUserFormData {

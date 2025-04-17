@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,6 +25,7 @@ import Students from "./pages/Students";
 import StudentIssues from "./pages/StudentIssues";
 import SubmitIssue from "./pages/SubmitIssue";
 import TeacherAttendance from "./pages/TeacherAttendance";
+import Analytics from "./pages/Analytics";
 import About from "./pages/StaticPages/About";
 import PrivacyPolicy from "./pages/StaticPages/PrivacyPolicy";
 import TermsConditions from "./pages/StaticPages/TermsConditions";
@@ -111,6 +111,15 @@ const App = () => (
               <ProtectedRoute allowedRoles={['admin', 'department_admin']}>
                 <AppLayout>
                   <TeacherAttendance />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            
+            {/* Analytics Route */}
+            <Route path="/analytics" element={
+              <ProtectedRoute allowedRoles={['admin', 'department_admin', 'teacher', 'student', 'parent']}>
+                <AppLayout>
+                  <Analytics />
                 </AppLayout>
               </ProtectedRoute>
             } />
