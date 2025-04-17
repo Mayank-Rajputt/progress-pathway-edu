@@ -11,6 +11,9 @@ export interface IUser extends Document {
   profileImage?: string;
   phoneNumber?: string;
   isMainAdmin?: boolean;
+  collegeId?: string;
+  lastLogin?: Date;
+  status: 'active' | 'inactive' | 'blocked';
   matchPassword: (enteredPassword: string) => Promise<boolean>;
 }
 
@@ -51,6 +54,18 @@ const userSchema = new Schema<IUser>(
     isMainAdmin: {
       type: Boolean,
       default: false
+    },
+    collegeId: {
+      type: String,
+      index: true
+    },
+    lastLogin: {
+      type: Date
+    },
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'blocked'],
+      default: 'active'
     }
   },
   {
@@ -74,5 +89,9 @@ userSchema.pre('save', async function(next) {
 userSchema.methods.matchPassword = async function(enteredPassword: string): Promise<boolean> {
   return await bcrypt.compare(enteredPassword, this.password);
 };
+
+// Add indexes for better query performance
+userSchema.index({ role: 1, collegeId: 1 });
+userSchema.index({ department: 1, collegeId: 1 });
 
 export const UserModel = mongoose.model<IUser>('User', userSchema);

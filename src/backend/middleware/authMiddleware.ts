@@ -9,6 +9,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: any;
+      collegeId?: string;
     }
   }
 }
@@ -37,8 +38,19 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
       throw new ApiError(401, 'User not found');
     }
     
-    // Set user in request
+    // Check if user is active
+    if (user.status !== 'active') {
+      throw new ApiError(401, 'Account is inactive or blocked. Please contact administrator');
+    }
+    
+    // Set user and collegeId in request
     req.user = user;
+    req.collegeId = user.collegeId;
+    
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+    
     next();
   } catch (error) {
     throw new ApiError(401, 'Not authorized, token failed');
@@ -94,3 +106,109 @@ export const authorizeForDepartment = (paramName: string = 'departmentId') => {
     next();
   });
 };
+
+// College-based access control middleware
+export const authorizeForCollege = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user || !req.collegeId) {
+    throw new ApiError(401, 'Not authorized');
+  }
+
+  // Extract collegeId from request params or query
+  const requestedCollegeId = 
+    req.params.collegeId || 
+    req.query.collegeId || 
+    req.body.collegeId || 
+    null;
+  
+  // If no specific college is requested, use the user's college
+  if (!requestedCollegeId) {
+    // Ensure body has collegeId for create operations
+    if (req.method === 'POST' && !req.body.collegeId) {
+      req.body.collegeId = req.collegeId;
+    }
+    return next();
+  }
+  
+  // Check if user has access to the requested college
+  if (requestedCollegeId !== req.collegeId && !req.user.isMainAdmin) {
+    throw new ApiError(403, 'You do not have access to this college');
+  }
+  
+  next();
+});
+
+// Log user activity
+export const logActivity = (action: string, module: string) => {
+  return asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    // Original response methods
+    const originalSend = res.send;
+    const originalJson = res.json;
+    const originalStatus = res.status;
+    
+    // Override status method
+    res.status = function(code) {
+      res.statusCode = code;
+      return res;
+    };
+    
+    // Override send method
+    res.send = function(body) {
+      logUserActivity(req, res, action, module, body);
+      return originalSend.call(this, body);
+    };
+    
+    // Override json method
+    res.json = function(body) {
+      logUserActivity(req, res, action, module, body);
+      return originalJson.call(this, body);
+    };
+    
+    next();
+  });
+};
+
+// Helper function to log user activity
+async function logUserActivity(req: Request, res: Response, action: string, module: string, responseBody: any) {
+  if (!req.user) return;
+  
+  try {
+    const { ActivityLogModel } = require('../models/activityLogModel');
+    
+    // Determine success or failure based on status code
+    const status = res.statusCode < 400 ? 'success' : 'failure';
+    
+    // Get resource information
+    const resourceId = req.params.id || '';
+    const resourceType = module.endsWith('s') ? module.slice(0, -1) : module;
+    
+    // Prepare log details
+    let details = `${req.user.name} performed ${action} on ${module}`;
+    if (resourceId) {
+      details += ` with ID ${resourceId}`;
+    }
+    
+    // Create activity log
+    await ActivityLogModel.create({
+      userId: req.user._id,
+      action,
+      details,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      module,
+      resourceId,
+      resourceType,
+      collegeId: req.collegeId,
+      status,
+      metadata: {
+        method: req.method,
+        url: req.originalUrl,
+        params: req.params,
+        query: req.query,
+        responseStatus: res.statusCode,
+        responseSuccess: status === 'success'
+      }
+    });
+  } catch (error) {
+    console.error('Error logging activity:', error);
+  }
+}
