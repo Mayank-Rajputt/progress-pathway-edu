@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -56,7 +55,11 @@ const Login: React.FC = () => {
       {/* Left panel with image/design */}
       <div className="hidden lg:flex lg:w-1/2 bg-primary justify-center items-center p-12">
         <div className="max-w-lg text-white">
-          <School size={80} className="mb-8" />
+          <img 
+            src="/lovable-uploads/b491e017-6cca-4738-8e47-e98a5e7ed11c.png" 
+            alt="Trakdemy Logo" 
+            className="mb-8 h-20"
+          />
           <h1 className="text-4xl font-bold mb-4">Trakdemy</h1>
           <p className="text-xl mb-8">
             Streamline your educational institution with our comprehensive student information management system.
@@ -80,7 +83,11 @@ const Login: React.FC = () => {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <div className="flex justify-center mb-2">
-              <School size={40} className="text-primary" />
+              <img 
+                src="/lovable-uploads/b491e017-6cca-4738-8e47-e98a5e7ed11c.png" 
+                alt="Trakdemy Logo" 
+                className="h-12"
+              />
             </div>
             <h2 className="text-3xl font-bold tracking-tight">Welcome back</h2>
             <p className="text-muted-foreground mt-2">

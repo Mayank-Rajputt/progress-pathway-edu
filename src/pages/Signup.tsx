@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, UserRole } from '../context/AuthContext';
@@ -54,7 +53,7 @@ const Signup: React.FC = () => {
       <div className="hidden lg:flex lg:w-1/2 bg-primary justify-center items-center p-12">
         <div className="max-w-lg text-white">
           <img 
-            src="/lovable-uploads/28048bd3-4188-4677-a707-e77bcf3a1aa5.png" 
+            src="/lovable-uploads/b491e017-6cca-4738-8e47-e98a5e7ed11c.png" 
             alt="Trakdemy Logo" 
             className="mb-8 h-20"
           />
@@ -82,7 +81,7 @@ const Signup: React.FC = () => {
           <div className="text-center">
             <div className="flex justify-center mb-2">
               <img 
-                src="/lovable-uploads/28048bd3-4188-4677-a707-e77bcf3a1aa5.png" 
+                src="/lovable-uploads/b491e017-6cca-4738-8e47-e98a5e7ed11c.png" 
                 alt="Trakdemy Logo" 
                 className="h-12"
               />

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -37,7 +38,7 @@ const Welcome: React.FC = () => {
         <div className="container mx-auto px-4 text-center">
           <div className="flex justify-center mb-6 md:mb-8">
             <img 
-              src="/lovable-uploads/098aba0b-f4d7-4326-ac4f-d97268594b9e.png" 
+              src="/lovable-uploads/b491e017-6cca-4738-8e47-e98a5e7ed11c.png" 
               alt="Trakdemy Logo" 
               className="h-32 md:h-48 w-auto" 
             />
@@ -196,7 +197,7 @@ const Welcome: React.FC = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
               <img 
-                src="/lovable-uploads/098aba0b-f4d7-4326-ac4f-d97268594b9e.png" 
+                src="/lovable-uploads/b491e017-6cca-4738-8e47-e98a5e7ed11c.png" 
                 alt="Trakdemy Logo" 
                 className="h-6 md:h-8"
               />

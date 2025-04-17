@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { School } from 'lucide-react';
@@ -11,7 +10,11 @@ const Footer: React.FC = () => {
           {/* Logo and description */}
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center mb-4">
-              <School className="h-6 w-6 text-primary mr-2" />
+              <img 
+                src="/lovable-uploads/b491e017-6cca-4738-8e47-e98a5e7ed11c.png" 
+                alt="Trakdemy Logo" 
+                className="h-8 w-8 mr-2"
+              />
               <span className="text-xl font-bold">Trakdemy</span>
             </div>
             <p className="text-sm text-gray-600 mb-4">
