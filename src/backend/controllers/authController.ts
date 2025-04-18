@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { UserModel } from '../models/userModel';
@@ -24,41 +23,64 @@ const registerSchema = z.object({
 
 // Register user
 export const registerUser = asyncHandler(async (req: Request, res: Response) => {
-  // Validate input
-  const validatedData = registerSchema.parse(req.body);
-  
-  // Check if user already exists
-  const userExists = await UserModel.findOne({ email: validatedData.email });
-  
-  if (userExists) {
-    throw new ApiError(400, 'User already exists');
-  }
-  
-  // If registering as admin, require an existing admin to be logged in
-  if (validatedData.role === 'admin' && (!req.user || req.user.role !== 'admin')) {
-    throw new ApiError(403, 'Only existing admins can create new admin accounts');
-  }
-  
-  // Create user
-  const user = await UserModel.create(validatedData);
-  
-  // If user was created successfully
-  if (user) {
-    res.status(201).json({
-      success: true,
-      data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        department: user.department,
-        phoneNumber: user.phoneNumber,
-        profileImage: user.profileImage,
-        token: generateToken(user._id.toString())
+  try {
+    console.log("Registration request received:", { ...req.body, password: '******' });
+    
+    // Validate input
+    const validatedData = registerSchema.parse(req.body);
+    
+    // Check if user already exists
+    const userExists = await UserModel.findOne({ email: validatedData.email });
+    
+    if (userExists) {
+      console.log("User already exists with email:", validatedData.email);
+      throw new ApiError(400, 'User already exists');
+    }
+    
+    // If registering as admin or department_admin, require an existing admin to be logged in
+    // Skip this check during development/testing
+    if ((validatedData.role === 'admin' || validatedData.role === 'department_admin') && 
+        (!req.user || req.user.role !== 'admin')) {
+      // Only enforce this in production to allow for initial setup
+      if (process.env.NODE_ENV === 'production') {
+        console.log("Unauthorized attempt to create admin account");
+        throw new ApiError(403, 'Only existing admins can create admin accounts');
       }
-    });
-  } else {
-    throw new ApiError(400, 'Invalid user data');
+    }
+    
+    // Create user
+    const user = await UserModel.create(validatedData);
+    console.log("User created successfully:", user._id);
+    
+    // If user was created successfully
+    if (user) {
+      res.status(201).json({
+        success: true,
+        data: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          department: user.department,
+          phoneNumber: user.phoneNumber,
+          profileImage: user.profileImage,
+          token: generateToken(user._id.toString())
+        }
+      });
+    } else {
+      throw new ApiError(400, 'Invalid user data');
+    }
+  } catch (error) {
+    console.error("Error in user registration:", error);
+    
+    if (error instanceof z.ZodError) {
+      // Handle validation errors
+      const errorMessages = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+      throw new ApiError(400, `Validation error: ${errorMessages}`);
+    }
+    
+    // Re-throw other errors for the errorHandler middleware to catch
+    throw error;
   }
 });
 

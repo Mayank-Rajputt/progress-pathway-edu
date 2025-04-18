@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -200,10 +199,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
         role,
-        department
+        department: department || ""
       };
       
+      console.log("Signup data being sent:", { ...userData, password: '******' });
+      
       const response = await axios.post(`${API_URL}/auth/register`, userData);
+      
+      console.log("Signup response:", response.data);
       
       if (response.data.success) {
         const userData = response.data.data;
@@ -233,7 +236,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toast.success('Account created successfully!');
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Signup failed');
+      console.error("Signup error:", error);
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Signup failed';
+      toast.error(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);

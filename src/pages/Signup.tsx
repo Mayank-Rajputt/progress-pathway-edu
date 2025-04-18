@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, UserRole } from '../context/AuthContext';
@@ -16,25 +17,61 @@ const Signup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState<UserRole>('student');
+  const [department, setDepartment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   const { signup } = useAuth();
   const navigate = useNavigate();
+
+  const validateForm = (): boolean => {
+    const errors: {[key: string]: string} = {};
+    
+    if (name.trim().length < 3) {
+      errors.name = 'Name must be at least 3 characters';
+    }
+    
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    if (password.length < 6) {
+      errors.password = 'Password must be at least 6 characters';
+    }
+    
+    if (password !== confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+    
+    if ((role === 'teacher' || role === 'department_admin') && !department.trim()) {
+      errors.department = 'Department is required for teachers and department admins';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+    if (!validateForm()) {
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-      await signup(name, email, password, role);
+      await signup(
+        name, 
+        email, 
+        password, 
+        role, 
+        (role === 'teacher' || role === 'department_admin') ? department : undefined
+      );
       // Redirect will be handled in the signup function
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Signup error:', error);
       // Error handling is in the signup function
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -102,7 +139,9 @@ const Signup: React.FC = () => {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  className={formErrors.name ? "border-red-500" : ""}
                 />
+                {formErrors.name && <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>}
               </div>
 
               <div className="space-y-2">
@@ -113,7 +152,9 @@ const Signup: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className={formErrors.email ? "border-red-500" : ""}
                 />
+                {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
               </div>
 
               <div className="space-y-2">
@@ -125,6 +166,7 @@ const Signup: React.FC = () => {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className={formErrors.password ? "border-red-500" : ""}
                   />
                   <button
                     type="button"
@@ -134,6 +176,7 @@ const Signup: React.FC = () => {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                {formErrors.password && <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>}
               </div>
 
               <div className="space-y-2">
@@ -145,6 +188,7 @@ const Signup: React.FC = () => {
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={formErrors.confirmPassword ? "border-red-500" : ""}
                   />
                   <button
                     type="button"
@@ -154,6 +198,7 @@ const Signup: React.FC = () => {
                     {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                {formErrors.confirmPassword && <p className="text-red-500 text-sm mt-1">{formErrors.confirmPassword}</p>}
               </div>
 
               <div className="space-y-3">
@@ -181,6 +226,20 @@ const Signup: React.FC = () => {
                   </div>
                 </RadioGroup>
               </div>
+
+              {(role === 'teacher' || role === 'department_admin') && (
+                <div className="space-y-2">
+                  <Label htmlFor="department">Department</Label>
+                  <Input
+                    id="department"
+                    type="text"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    className={formErrors.department ? "border-red-500" : ""}
+                  />
+                  {formErrors.department && <p className="text-red-500 text-sm mt-1">{formErrors.department}</p>}
+                </div>
+              )}
             </div>
 
             <Button
