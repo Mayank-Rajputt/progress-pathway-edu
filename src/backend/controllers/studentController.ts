@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { StudentModel } from '../models/studentModel';
 import { UserModel } from '../models/userModel';
@@ -367,7 +366,7 @@ export const uploadDocument = asyncHandler(async (req: Request, res: Response) =
   res.status(201).json({
     success: true,
     data: {
-      documentId: newDocument._id,
+      documentId: newDocument._id ? newDocument._id.toString() : undefined,
       type,
       name: name || req.file.originalname,
       url: fileUrl,
@@ -423,7 +422,9 @@ export const deleteDocument = asyncHandler(async (req: Request, res: Response) =
   
   // Find document
   const documentId = req.params.documentId;
-  const documentIndex = student.documents.findIndex(doc => doc._id?.toString() === documentId);
+  const documentIndex = student.documents.findIndex(doc => 
+    doc._id && doc._id.toString() === documentId
+  );
   
   if (documentIndex === -1) {
     throw new ApiError(404, 'Document not found');

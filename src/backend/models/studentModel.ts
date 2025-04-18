@@ -15,6 +15,7 @@ export interface IStudent extends Document {
   subjects: string[];
   collegeId: string;
   documents: {
+    _id?: mongoose.Types.ObjectId;
     type: string;
     name: string;
     url: string;

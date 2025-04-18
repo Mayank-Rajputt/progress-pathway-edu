@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { ActivityLogModel } from '../models/activityLogModel';
 import { ApiError, asyncHandler } from '../middleware/errorMiddleware';
 import { UserModel } from '../models/userModel';
+import mongoose from 'mongoose';
 
 // Get activity logs
 export const getActivityLogs = asyncHandler(async (req: Request, res: Response) => {
@@ -43,7 +44,9 @@ export const getActivityLogs = asyncHandler(async (req: Request, res: Response) 
     ? (sort as string).substring(1) 
     : sort as string;
   const sortDirection = (sort as string).startsWith('-') ? -1 : 1;
-  const sortOrder = { [sortField]: sortDirection };
+  
+  // Fix: Use the proper type for sortOrder - use Record<string, 1 | -1 | mongoose.SortOrder>
+  const sortOrder: Record<string, 1 | -1> = { [sortField]: sortDirection };
   
   const logs = await ActivityLogModel.find(query)
     .populate('userId', 'name email role')
