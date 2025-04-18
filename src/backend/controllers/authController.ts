@@ -34,7 +34,7 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
     
     if (userExists) {
       console.log("User already exists with email:", validatedData.email);
-      throw new ApiError(400, 'User already exists');
+      throw new ApiError(400, 'User already exists with this email address');
     }
     
     // If registering as admin or department_admin, require an existing admin to be logged in
@@ -49,7 +49,12 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
     }
     
     // Create user
-    const user = await UserModel.create(validatedData);
+    const user = await UserModel.create({
+      ...validatedData,
+      status: 'active', // Ensure status is set
+      collegeId: req.user?.collegeId || 'default' // Set collegeId
+    });
+    
     console.log("User created successfully:", user._id);
     
     // If user was created successfully

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, UserRole } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -18,8 +18,10 @@ const Signup: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState<UserRole>('student');
   const [department, setDepartment] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+  const [serverError, setServerError] = useState<string>('');
   const { signup } = useAuth();
   const navigate = useNavigate();
 
@@ -50,6 +52,13 @@ const Signup: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
+  // Clear server error when form changes
+  useEffect(() => {
+    if (serverError) {
+      setServerError('');
+    }
+  }, [name, email, password, confirmPassword, role, department, phoneNumber]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
@@ -58,8 +67,13 @@ const Signup: React.FC = () => {
     }
     
     setIsSubmitting(true);
+    setServerError('');
     
     try {
+      console.log('Attempting signup with:', { 
+        name, email, role, department: (role === 'teacher' || role === 'department_admin') ? department : undefined 
+      });
+      
       await signup(
         name, 
         email, 
@@ -69,8 +83,13 @@ const Signup: React.FC = () => {
       );
       // Redirect will be handled in the signup function
     } catch (error: any) {
-      console.error('Signup error:', error);
-      // Error handling is in the signup function
+      console.error('Signup error in component:', error);
+      setServerError(
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        error.message || 
+        'Failed to create account. Please try again.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -129,6 +148,13 @@ const Signup: React.FC = () => {
             </p>
           </div>
 
+          {serverError && (
+            <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded relative">
+              <strong className="font-bold">Error: </strong>
+              <span className="block sm:inline">{serverError}</span>
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -155,6 +181,16 @@ const Signup: React.FC = () => {
                   className={formErrors.email ? "border-red-500" : ""}
                 />
                 {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Phone Number (Optional)</Label>
+                <Input
+                  id="phoneNumber"
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">

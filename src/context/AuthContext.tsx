@@ -199,7 +199,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
         role,
-        department: department || ""
+        department: department || "",
+        phoneNumber: ""
       };
       
       console.log("Signup data being sent:", { ...userData, password: '******' });
@@ -236,8 +237,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toast.success('Account created successfully!');
       }
     } catch (error: any) {
-      console.error("Signup error:", error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Signup failed';
+      console.error("Signup error details:", error);
+      
+      // Enhanced error handling
+      let errorMessage = 'Signup failed';
+      
+      // Try to extract the most specific error message
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      // Log detailed error information
+      console.error("Error response data:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      
       toast.error(errorMessage);
       throw error;
     } finally {
