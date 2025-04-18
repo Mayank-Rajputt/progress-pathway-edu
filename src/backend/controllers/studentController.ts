@@ -361,10 +361,13 @@ export const uploadDocument = asyncHandler(async (req: Request, res: Response) =
   // Save student
   await student.save();
   
+  // Get the newly added document
+  const newDocument = student.documents[student.documents.length - 1];
+  
   res.status(201).json({
     success: true,
     data: {
-      documentId: student.documents[student.documents.length - 1]._id,
+      documentId: newDocument._id,
       type,
       name: name || req.file.originalname,
       url: fileUrl,
@@ -420,7 +423,7 @@ export const deleteDocument = asyncHandler(async (req: Request, res: Response) =
   
   // Find document
   const documentId = req.params.documentId;
-  const documentIndex = student.documents.findIndex(doc => doc._id.toString() === documentId);
+  const documentIndex = student.documents.findIndex(doc => doc._id?.toString() === documentId);
   
   if (documentIndex === -1) {
     throw new ApiError(404, 'Document not found');

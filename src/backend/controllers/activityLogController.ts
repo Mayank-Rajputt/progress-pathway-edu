@@ -37,9 +37,13 @@ export const getActivityLogs = asyncHandler(async (req: Request, res: Response) 
   
   // Get paginated results
   const skip = (Number(page) - 1) * Number(limit);
-  const sortOrder = (sort as string).startsWith('-') 
-    ? { [sort.substring(1)]: -1 } 
-    : { [sort]: 1 };
+  
+  // Fix for sort order handling
+  const sortField = (sort as string).startsWith('-') 
+    ? (sort as string).substring(1) 
+    : sort as string;
+  const sortDirection = (sort as string).startsWith('-') ? -1 : 1;
+  const sortOrder = { [sortField]: sortDirection };
   
   const logs = await ActivityLogModel.find(query)
     .populate('userId', 'name email role')

@@ -77,7 +77,11 @@ export const createCertificate = asyncHandler(async (req: Request, res: Response
     collegeId: req.collegeId,
     fileUrl,
     metadata: validatedData.metadata || {},
-    signature: validatedData.signature
+    signature: {
+      name: validatedData.signature.name,
+      designation: validatedData.signature.designation,
+      imageUrl: validatedData.signature.imageUrl || ''
+    }
   });
   
   res.status(201).json({
@@ -206,7 +210,13 @@ export const updateCertificate = asyncHandler(async (req: Request, res: Response
   }
   if (validatedData.templateId) certificate.templateId = validatedData.templateId;
   if (validatedData.metadata) certificate.metadata = validatedData.metadata;
-  if (validatedData.signature) certificate.signature = validatedData.signature;
+  if (validatedData.signature) {
+    certificate.signature = {
+      name: validatedData.signature.name || certificate.signature.name,
+      designation: validatedData.signature.designation || certificate.signature.designation,
+      imageUrl: validatedData.signature.imageUrl || certificate.signature.imageUrl
+    };
+  }
   
   // Regenerate PDF if key details changed
   if (validatedData.title || validatedData.description || 
@@ -230,7 +240,7 @@ export const updateCertificate = asyncHandler(async (req: Request, res: Response
       type: certificate.type,
       title: certificate.title,
       description: certificate.description,
-      recipientName: recipient.name,
+      recipientName: recipient?.name || 'Recipient',
       certificateNumber: certificate.certificateNumber,
       issuerName: req.user.name,
       signatureName: certificate.signature.name,
@@ -321,12 +331,21 @@ export const generateCertificatePDF = asyncHandler(async (req: Request, res: Res
       fs.mkdirSync(dir, { recursive: true });
     }
     
+    // Get the recipient name safely
+    let recipientName = 'Recipient';
+    if (certificate.issuedTo) {
+      // Check if issuedTo is populated
+      if (typeof certificate.issuedTo === 'object' && certificate.issuedTo !== null && 'name' in certificate.issuedTo) {
+        recipientName = certificate.issuedTo.name as string;
+      }
+    }
+    
     // Generate PDF file
     await generatePDF(filePath, {
       type: certificate.type,
       title: certificate.title,
       description: certificate.description,
-      recipientName: certificate.issuedTo.name,
+      recipientName: recipientName,
       certificateNumber: certificate.certificateNumber,
       issuerName: req.user.name,
       signatureName: certificate.signature.name,
@@ -337,9 +356,19 @@ export const generateCertificatePDF = asyncHandler(async (req: Request, res: Res
   
   // Set headers for file download
   res.setHeader('Content-Type', 'application/pdf');
+  
+  // Get the recipient email safely for the filename
+  let recipientName = 'recipient';
+  if (certificate.issuedTo) {
+    // Check if issuedTo is populated
+    if (typeof certificate.issuedTo === 'object' && certificate.issuedTo !== null && 'name' in certificate.issuedTo) {
+      recipientName = (certificate.issuedTo.name as string).replace(/\s+/g, '_');
+    }
+  }
+  
   res.setHeader(
     'Content-Disposition', 
-    `attachment; filename=${certificate.type}_certificate_${certificate.issuedTo.name.replace(/\s+/g, '_')}.pdf`
+    `attachment; filename=${certificate.type}_certificate_${recipientName}.pdf`
   );
   
   // Stream file to response
@@ -358,12 +387,21 @@ export const sendCertificateByEmail = asyncHandler(async (req: Request, res: Res
     throw new ApiError(404, 'Certificate not found');
   }
   
+  // Get the recipient email safely
+  let recipientEmail = 'No email available';
+  if (certificate.issuedTo) {
+    // Check if issuedTo is populated
+    if (typeof certificate.issuedTo === 'object' && certificate.issuedTo !== null && 'email' in certificate.issuedTo) {
+      recipientEmail = certificate.issuedTo.email as string;
+    }
+  }
+  
   // TODO: Implement email sending functionality when email service is configured
   // For now, simulate email sending
   
   res.json({
     success: true,
-    message: `Certificate has been sent to ${certificate.issuedTo.email}`
+    message: `Certificate has been sent to ${recipientEmail}`
   });
 });
 
